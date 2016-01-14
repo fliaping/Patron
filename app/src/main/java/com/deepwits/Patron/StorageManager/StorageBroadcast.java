@@ -13,12 +13,12 @@ import java.util.TimerTask;
  * Created by Payne on 1/13/16.
  * 针对不支持TF热插拔的机器,自定义TF事件广播
  */
-public class Broadcast extends TimerTask{
+public class StorageBroadcast extends TimerTask{
     public final static String ACTION_MEDIA_MOUNTED = "com.deepwits.Patron.StorageManager.MEDIA_MOUNTED";
     public final static String ACTION_MEDIA_UNMOUNTED = "com.deepwits.Patron.StorageManager.ACTION_MEDIA_UNMOUNTED";
     private Context context = null;
     //构造函数
-    public Broadcast(Context context){
+    public StorageBroadcast(Context context){
         this.context = context;
         Timer timer = new Timer();
         timer.schedule(this, 0, 1000);//每秒执行一次

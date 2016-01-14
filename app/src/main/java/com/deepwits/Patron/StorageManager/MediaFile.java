@@ -122,16 +122,16 @@ public class MediaFile {
     }
 
     public void setFilename(String filename) {
-        if(null != path){
+        if(null != path){               //路径不为空,则根据路径分割出文件名
             this.filename = splitFileName();
-        }else {
+        }else {                         //路径为空,根据参数设置
             this.filename = filename;
         }
     }
 
     public void setPath(String path) {
         this.path = path;
-        setFilename(null);
+        setFilename(null);  //有了路径后就可自动设置文件名和媒体类型
         setMediaType(null);
     }
 
@@ -172,7 +172,7 @@ public class MediaFile {
     }
 
     public void setMediaType(MediaType media_type) {
-        if(null != path){
+        if(null != path){               //若路径不为空,则根据路径判断媒体类型
             String tmp = splitPostfix(path);
             if("mp4".equalsIgnoreCase(tmp)){
                 this.media_type = MediaType.VIDEO;
@@ -180,7 +180,7 @@ public class MediaFile {
             if("jpg".equalsIgnoreCase(tmp)){
                 this.media_type = MediaType.PICTURE;
             }
-        }else {
+        }else {                         //若路径为空,则根据参数设置
             this.media_type = media_type;
         }
     }
@@ -201,6 +201,12 @@ public class MediaFile {
             return null;
         }
     }
+
+    /**
+     * 从路径中分割出后缀名
+     * @param src
+     * @return
+     */
     private String splitPostfix(String src){
         int tmp = src.lastIndexOf(".");
         if(tmp>0 && tmp<src.length()){

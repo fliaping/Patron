@@ -19,10 +19,10 @@ import java.io.OutputStreamWriter;
 /**
  * Created by Payne on 1/13/16.
  */
-public class Resolve {
+public class StorageResolve {
 
     private MediaFile mediaFile;
-    public Resolve(MediaFile mediaFile){
+    public StorageResolve(MediaFile mediaFile){
         this.mediaFile = mediaFile;
         if(null != mediaFile.getPath()){
             resolve();  //解析文件
