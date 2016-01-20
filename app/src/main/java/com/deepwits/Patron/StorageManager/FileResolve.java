@@ -13,19 +13,20 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.util.Random;
 
 /**
  * Created by Payne on 1/13/16.
  */
-public class StorageResolve {
+public class FileResolve {
 
     private MediaFile mediaFile;
-    public StorageResolve(MediaFile mediaFile){
+    public FileResolve(){
         this.mediaFile = mediaFile;
-        if(null != mediaFile.getPath()){
-            resolve();  //解析文件
+        try {
+            DefaultConfig.ok();  //检查SD卡可用
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -33,24 +34,25 @@ public class StorageResolve {
      * 解析文件,获取MediaFile类所需的相关信息
      * @return
      */
-    public int resolve() {
+    public int resolve(MediaFile mediaFile) {
         String path = mediaFile.getPath();
-        File file = new File(path);
-        if (!file.exists()) return -1;  // file is not exists
+        if(null == path ){ return -1;}   //path is null
+        if (!(new File(path).exists())) return -2;  // file is not exists
+        File thumbDir = new File(DefaultConfig.APP_DIR+".thumbnail"); //create thumbnail directory
+        if(!thumbDir.exists()) thumbDir.mkdirs();
         if(mediaFile.getMediaType() == MediaFile.MediaType.VIDEO){
             long tmp1[] = getPlayTime(path);
             mediaFile.setWidth((int) tmp1[0]);
             mediaFile.setHeight((int) tmp1[1]);
             mediaFile.setDuration(tmp1[2]);
 
-            //创建视频缩略图
+            //create video file thumbnail
             Bitmap bitmap = getVideoThumbnail(path, 512, 512, MediaStore.Video.Thumbnails.MINI_KIND);
-            DefaultConfig config = new DefaultConfig();
-            File tmp = new File(config.APP_DIR);
-            if(!tmp.exists()) tmp.mkdirs();
+
+            File osFile = new File(thumbDir.getAbsolutePath()+File.separator+StorageUtil.getRandomString(7)+mediaFile.getFilename());
             FileOutputStream outStream = null;
             try {
-                outStream = new FileOutputStream(tmp);
+                outStream = new FileOutputStream(osFile);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
@@ -62,10 +64,9 @@ public class StorageResolve {
             mediaFile.setWidth(tmp2[0]);
             mediaFile.setHeight(tmp2[1]);
 
-            //创建图片缩略图
+            //create image file thumbnail
             Bitmap bitmap = getImageThumbnail(path,512,512);
-            DefaultConfig config = new DefaultConfig();
-            File tmp = new File(config.APP_DIR);
+            File tmp = new File(DefaultConfig.APP_DIR);
             if(!tmp.exists()) tmp.mkdirs();
             FileOutputStream outStream = null;
             try {
