@@ -29,13 +29,13 @@ public class StorageUtil {
         List<String> pathList= getExtSDCardPaths();
         if(pathList.size()>1){//paths.get(0)肯定是外置SD卡的位置，因为它是primary external storage.
             Log.e(TAG, "*****************pathList.get(0) is " + pathList.get(0));
-            Log.e(TAG, "^_^ ^_^ ^_^ ^_^ ^_^ ^_^ ^_^ ^_^ ^_^pathList.get(1) is " + pathList.get(1));
+            Log.e(TAG, "^_^ ^_^ ^_^ ^_^ pathList.get(1) is " + pathList.get(1));
             path = pathList.get(1); //    /storage/sdcard1
         } else if(pathList.size() == 1) {
             //path = pathList.get(0); //   /storage/sdcard0*/
             return path;
         }
-        //path = pathList.get(0);
+        path = "/storage/sdcard0";
         return path;
     }
 
@@ -323,7 +323,7 @@ public class StorageUtil {
         return ret;
     }
     public static String getRandomString(int length) { //length表示生成字符串的长度
-        String base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
         Random random = new Random();
         StringBuffer sb = new StringBuffer();
         for (int i = 0; i < length; i++) {

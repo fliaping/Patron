@@ -37,45 +37,75 @@ public class FileResolve {
     public int resolve(MediaFile mediaFile) {
         String path = mediaFile.getPath();
         if(null == path ){ return -1;}   //path is null
-        if (!(new File(path).exists())) return -2;  // file is not exists
-        File thumbDir = new File(DefaultConfig.APP_DIR+".thumbnail"); //create thumbnail directory
-        if(!thumbDir.exists()) thumbDir.mkdirs();
-        if(mediaFile.getMediaType() == MediaFile.MediaType.VIDEO){
+        File file = new File(path);
+        if (!(file.exists())) return -2;  // file is not exists
+        Boolean isCreateThumb = false;    //
+        String thumbnailFileName = ".thumb_"+mediaFile.getFilename()+".jpg";  //缩略图文件名
+        File thumbnail = new File(DefaultConfig.THUMBNAIL_PATH+"/"+thumbnailFileName);
+        if(!thumbnail.exists()){
+            isCreateThumb = true;   //判断缩略图是否存在,存在就不再生成
+        }else {
+            mediaFile.setThumbPath(thumbnail.getPath());
+            Log.e("StorageManager","缩略图已存在:"+thumbnail.getPath());
+        }
+
+        if(mediaFile.getMediaType() == MediaFile.MediaType.VIDEO.get()){
             long tmp1[] = getPlayTime(path);
             mediaFile.setWidth((int) tmp1[0]);
             mediaFile.setHeight((int) tmp1[1]);
             mediaFile.setDuration(tmp1[2]);
 
-            //create video file thumbnail
-            Bitmap bitmap = getVideoThumbnail(path, 512, 512, MediaStore.Video.Thumbnails.MINI_KIND);
+            Log.e("StorageManager","解析视频文件 :"+path+" width:"+tmp1[0]+" height:"+tmp1[1]+" du:"+tmp1[2]);
 
-            File osFile = new File(thumbDir.getAbsolutePath()+File.separator+StorageUtil.getRandomString(7)+mediaFile.getFilename());
-            FileOutputStream outStream = null;
-            try {
-                outStream = new FileOutputStream(osFile);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
+            //create video file thumbnail
+            if(isCreateThumb){
+                Bitmap bitmap = getVideoThumbnail(path, 512, 512, MediaStore.Video.Thumbnails.MINI_KIND);
+                File dir = new File(DefaultConfig.THUMBNAIL_PATH);
+                if(!dir.exists()) dir.mkdirs();
+                File osFile = new File(dir,thumbnailFileName);
+                FileOutputStream outStream = null;
+                try {
+                    outStream = new FileOutputStream(osFile);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                if(bitmap!=null){
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outStream);
+                    mediaFile.setThumbPath(osFile.getPath());
+                    Log.e("StorageManager", "缩略图生成成功 " + osFile.getPath());
+                }else {
+                    Log.e("StorageManager","bitmap is null,thumbnail create failed");
+                }
             }
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outStream);
 
         }
-        if(mediaFile.getMediaType() == MediaFile.MediaType.PICTURE){
+        if(mediaFile.getMediaType() == MediaFile.MediaType.PICTURE.get()){
             int tmp2[] = getPicSize(path);
             mediaFile.setWidth(tmp2[0]);
             mediaFile.setHeight(tmp2[1]);
 
+            Log.e("StorageManager", "解析图片文件 :" + path + " width:" + tmp2[0] + " height:" + tmp2[1]);
             //create image file thumbnail
-            Bitmap bitmap = getImageThumbnail(path,512,512);
-            File tmp = new File(DefaultConfig.APP_DIR);
-            if(!tmp.exists()) tmp.mkdirs();
-            FileOutputStream outStream = null;
-            try {
-                outStream = new FileOutputStream(tmp);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
+            if(isCreateThumb){
+                Bitmap bitmap = getImageThumbnail(path, 512, 512);
+                File dir = new File(DefaultConfig.THUMBNAIL_PATH);
+                if(!dir.exists()) dir.mkdirs();
+                File osFile = new File(dir,thumbnailFileName);
+                FileOutputStream outStream = null;
+                try {
+                    outStream = new FileOutputStream(osFile);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                if(bitmap!=null){
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outStream);
+                    mediaFile.setThumbPath(osFile.getPath());
+                    Log.e("StorageManager", "缩略图生成成功 " + osFile.getPath());
+                }
+
             }
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outStream);
         }
+        mediaFile.setThumbPath(thumbnail.getPath());
         //size
         mediaFile.setSize(file.length());
         mediaFile.setDate(file.lastModified());
@@ -199,8 +229,8 @@ public class FileResolve {
         bitmap = ThumbnailUtils.createVideoThumbnail(videoPath, kind);
         System.out.println("w"+bitmap.getWidth());
         System.out.println("h"+bitmap.getHeight());
-        bitmap = ThumbnailUtils.extractThumbnail(bitmap, width, height,
-                ThumbnailUtils.OPTIONS_RECYCLE_INPUT);
+        /*bitmap = ThumbnailUtils.extractThumbnail(bitmap, width, height,
+                ThumbnailUtils.OPTIONS_RECYCLE_INPUT);*/
         return bitmap;
     }
 

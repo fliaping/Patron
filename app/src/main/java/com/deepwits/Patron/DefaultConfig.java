@@ -1,5 +1,7 @@
 package com.deepwits.Patron;
 
+import android.util.Log;
+
 import com.deepwits.Patron.StorageManager.StorageUtil;
 
 import java.io.File;
@@ -38,6 +40,7 @@ public class DefaultConfig {
     }
     public static boolean ok() throws IOException{
         String ROOT = StorageUtil.getStorageDir();
+        ROOT = "/storage/sdcard1";
         if(ROOT == null){
             throw new IOException("SD卡未准备好");
         }else{
@@ -49,6 +52,8 @@ public class DefaultConfig {
             UPLOAD_VIDEO_PATH = VIDEOS_PATH + UPLOAD_VIDEO_DIR + S;
             TAKE_PICTURE_PATH = PICTURES_PATH + TAKE_PICTURE_DIR + S;
             UPLOAD_PICTURE_PATH = PICTURES_PATH + UPLOAD_PICTURE_DIR + S;
+            THUMBNAIL_PATH = APP_PATH+THUMBNAIL_DIR+S;
+            Log.e("StorageManager","APP path:"+APP_PATH);
             return true;
         }
     }
@@ -62,6 +67,7 @@ public class DefaultConfig {
     public static final String UPLOAD_VIDEO_DIR = "ShortVideo";
     public static final String TAKE_PICTURE_DIR = "takeWhileRecord";
     public static final String UPLOAD_PICTURE_DIR = "OrderPhoto";
+    public static final String THUMBNAIL_DIR = ".thumbnail";
 
 
     public static final String DB_MEDIAFILE_TABLE_NAME = "MediaFile";
@@ -78,6 +84,7 @@ public class DefaultConfig {
     public static String UPLOAD_VIDEO_PATH = null;
     public static String TAKE_PICTURE_PATH = null;
     public static String UPLOAD_PICTURE_PATH = null;
+    public static String THUMBNAIL_PATH = null;
 
 
     public static long SOFT_LIMIT = 200 * 1024 * 1024;  //软限制200M

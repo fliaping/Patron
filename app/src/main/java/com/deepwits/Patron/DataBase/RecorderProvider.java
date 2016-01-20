@@ -11,7 +11,6 @@ import android.util.Log;
 
 import com.deepwits.Patron.DataBase.DBOpenHelper;
 import com.deepwits.Patron.DataBase.MediaFileDAOImpl;
-import com.deepwits.Patron.StorageManager.RecorderProviderMetaData;
 import com.deepwits.Patron.StorageManager.StorageManager;
 
 public class RecorderProvider extends ContentProvider {

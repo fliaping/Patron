@@ -13,7 +13,6 @@ public class RecorderProviderMetaData {
     // 定义外部访问的Authority
     public static final String AUTHORITY = "com.deepwits.Patron.StorageManager";
 
-    public static final String ITEM_FLAG = "ITEM";
     // 数据库版本
     public static final int VERSION = 1;
     public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.paynexu.media";

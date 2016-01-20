@@ -3,12 +3,14 @@ package com.deepwits.Patron.StorageManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.deepwits.Patron.DataBase.MediaFileDAOImpl;
 import com.deepwits.Patron.DefaultConfig;
 import com.deepwits.Patron.Recorder.RecordService;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -32,6 +34,7 @@ public class StorageManager extends Thread {
         SM.mService = mService;
         return SM;
     }
+    //-------单例----
 
     private Looper mLooper;
     private FileResolve fileResolve;
@@ -51,29 +54,33 @@ public class StorageManager extends Thread {
     @Override
     public void run() {
         super.run();
+
+        try {
+            DefaultConfig.ok(); //check storage
+            makedirs();   //make all directory
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        mfImpl = new MediaFileDAOImpl(mService);
+        fileResolve = new FileResolve();
+        //存储线程方法
         Looper.prepare();
         synchronized (this) {
             mLooper = Looper.myLooper();
             mHandler = new Handler();
             notifyAll();
         }
-        mfImpl = new MediaFileDAOImpl(mService);
-        fileResolve = new FileResolve();
-        MediaFile mf = new MediaFile();
-        /*mf.setPath("/sdcard/xx.mp4");
-        mf.setDate(12323);
-        mfImpl.add(mf);*/
-
-
-
         mHandler.postDelayed(syncTask, 1000 * 5); //５秒后开始同步数据库
         Looper.loop();
     }
-
     public void addToDB(String path) {  //添加文件到数据库
         mHandler.post(new AddRunnable(path));
     }
 
+    /**
+     * 检查剩余空间,如果剩余空间不足,等待删除文件后再启动
+     * @param isRecord
+     */
     public void checkStorageAndRecord(boolean isRecord) {
         long avai = StorageUtil.getAvailableSize(DefaultConfig.ROOT);
         if (!isRecord) {            //大于硬限制可以在后台删除，不影响相机启动
@@ -126,35 +133,19 @@ public class StorageManager extends Thread {
      */
     public void fileList(File f, List<MediaFile> list, String path, List<File> tempList) {
         if (f != null && list != null) {
-            if (f.isDirectory()) {
+            if (f.isDirectory() && !f.isHidden()) {
                 final File[] fileArray = f.listFiles();
                 if (fileArray != null) {
                     for (int i = 0; i < fileArray.length; i++) {
                         //递归调用
                         if (!fileArray[i].isDirectory()) {
-                            String fileName = fileArray[i].getName();
-                            String prefix = StorageUtil.getFilePrefix(fileName);
-                            if ((path.equalsIgnoreCase(DefaultConfig.VIDEOS_DIR) && !prefix.equalsIgnoreCase("mp4")) ||    //删除文件中非mp4的文件
-                                    (path.equalsIgnoreCase(DefaultConfig.PICTURES_DIR) && !prefix.equalsIgnoreCase("jpg"))     //删除文件中非jpg的文件
-                                    ) {
-                                if (prefix.equalsIgnoreCase("temp")) {    //正在占用的视频文件不删
-                                    tempList.add(fileArray[i]);
-                                } else {
-                                    fileArray[i].delete();
-                                    Log.e(TAG, "fileList delete " + fileArray[i].getAbsolutePath() + " prefix:" + prefix);
-                                }
-                                continue;
-                            }
                             MediaFile mediaFile = new MediaFile(fileArray[i].getPath());
-                            Log.e(TAG,mediaFile.getPath());
                             fileResolve.resolve(mediaFile); //解析文件
                             list.add(mediaFile);
                         } else {
-                            if (fileArray[i].getName().toCharArray()[0] == '.') {    //删除隐藏的空文件夹
-                                Log.e(TAG, "delete hidden file " + fileArray[i].getName());
-                                fileArray[i].delete();
+                            if(!fileArray[i].isHidden()){  //不扫描隐藏文件夹
+                                fileList(fileArray[i], list, path, tempList);
                             }
-                            fileList(fileArray[i], list, path, tempList);
                         }
                     }
                 }
@@ -169,43 +160,6 @@ public class StorageManager extends Thread {
     public void getFileList(String path, List<MediaFile> list) {
         List<File> tempList = new ArrayList<File>();
         fileList(new File(path), list, path, tempList);
-
-        //删除正常视频文件夹中的(xxxx-xx-xx)空文件夹
-        File directory = new File(DefaultConfig.NORMAL_VIDEO_PATH);
-        File[] normalvideo = directory.listFiles();
-        if (normalvideo != null) {
-            for (int i = 0; i < normalvideo.length; i++) {
-                if (normalvideo[i].isDirectory() && normalvideo[i].listFiles().length == 0)
-                    normalvideo[i].delete();                //删除空文件夹
-                if (!normalvideo[i].isDirectory())
-                    normalvideo[i].delete();   //删除Videos目录下文件，因为文件在Videos/xxxx-xx-xx/目录中
-            }
-        }
-        //删除锁定视频文件夹中的空文件夹
-        File[] lockvideo = new File(DefaultConfig.LOCK_VIDEO_PATH).listFiles();
-        if (lockvideo != null) {
-            for (int i = 0; i < lockvideo.length; i++) {
-                if (lockvideo[i].isDirectory() && lockvideo[i].listFiles().length == 0)
-                    lockvideo[i].delete();                //删除空文件夹
-           /* if(!lockvideo[i].isDirectory()) lockvideo[i].delete();  */
-            }
-        }
-
-        //启动删除多余的temp文件
-        File newTempFile = null;
-        for (int i = 0; i < tempList.size(); i++) {
-            if (newTempFile == null) {
-                newTempFile = tempList.get(i);
-            } else {
-                if (newTempFile.lastModified() < tempList.get(i).lastModified()) {
-                    newTempFile.delete();
-                    newTempFile = tempList.get(i);
-                } else {
-                    tempList.get(i).delete();
-                }
-            }
-        }
-
     }
 
     public void syncMediaFile() {
@@ -214,7 +168,9 @@ public class StorageManager extends Thread {
         long prescan = System.currentTimeMillis();
         getFileList(DefaultConfig.APP_PATH, storageList); //存储中视频文件列表
         long comparetime = System.currentTimeMillis();
+        Log.v(TAG, "扫描文件用时为:" + (comparetime - prescan));
         List<MediaFile> dbList = mfImpl.query(null,null,null);
+        if(dbList == null)  Log.e(TAG,"dbList is null");
         Map<String, MediaFile> fileMap = new HashMap<String, MediaFile>();  //所有文件的 <文件名-文件对象>映射表，便于插入时查询检索
         /**
          * 利用videoMap<key,value>的数据结构，key为文件名，value的初值为文件类型(大于0)，
@@ -232,25 +188,27 @@ public class StorageManager extends Thread {
         long presync = System.currentTimeMillis();
         Map<String, Integer> mediaMap = new HashMap<String, Integer>();   //视频map表，用于标记数据库更新类型
         for (MediaFile mediaFile : storageList) {
-            //Log.v(TAG,"localVideo:" + video.getFilename());
-            mediaMap.put(mediaFile.getFilename(), mediaFile.getEventType());   //将map中的value设为文件类型（大于0）
+            mediaMap.put(mediaFile.getFilename(), 1);   //将map中的value设为文件类型（1）
+            Log.e(TAG, "mediaMap:" + mediaFile.getFilename() + " 1" );
             fileMap.put(mediaFile.getFilename(), mediaFile);  //将视频文件插入检索表
         }
-        for (MediaFile db : dbList) {            //遍历数据库中视频列表
-            if (mediaMap.containsKey(db.getFilename())) {    //原表中包含数据库中某条记录
-                MediaFile localFile = fileMap.get(db.getFilename());   //从检索表获取本地文件对象
 
-                if (db.getEventType() == localFile.getEventType() && db.getSize() == localFile.getSize()) {   //类型大小相同,value置为0,不更新
-                    mediaMap.put(db.getFilename(), 0);
-                } else {                                          //类型不同，value置为-2，更新数据库
-                    mediaMap.put(db.getFilename(), -2);
+            for (MediaFile db : dbList) {            //遍历数据库中视频列表
+                Log.e(TAG, "dbList:" + db.getFilename()  );
+                if (mediaMap.containsKey(db.getFilename())) {    //原表中包含数据库中某条记录
+                    MediaFile localFile = fileMap.get(db.getFilename());   //从检索表获取本地文件对象
+                    if (db.getEventType() == localFile.getEventType() && db.getSize() == localFile.getSize()) {   //类型大小相同,value置为0,不更新
+                        mediaMap.put(db.getFilename(), 0);
+                    } else {                                          //类型不同，value置为-2，更新数据库
+                        mediaMap.put(db.getFilename(), -2);
+                    }
+                    //Log.v(TAG,"Video:"+localFile.getFilename()+"  " + dbvideo.getFilename() + "result:" + videoMap.get(dbvideo.getFilename()));
+                } else {                                          //原表中不包含该条记录,value置为-1，添加到数据库
+                    mediaMap.put(db.getFilename(), -1);
+                    //Log.v(TAG, "Video:" + "-----------------" + "  " + dbvideo.getFilename() + "result:" + videoMap.get(dbvideo.getFilename()));
                 }
-                //Log.v(TAG,"Video:"+localFile.getFilename()+"  " + dbvideo.getFilename() + "result:" + videoMap.get(dbvideo.getFilename()));
-            } else {                                          //原表中不包含该条记录,value置为-1，添加到数据库
-                mediaMap.put(db.getFilename(), -1);
-                //Log.v(TAG, "Video:" + "-----------------" + "  " + dbvideo.getFilename() + "result:" + videoMap.get(dbvideo.getFilename()));
             }
-        }
+
 
         int picinsert = 0, picupdate = 0, picdelete = 0, picFailInsert = 0;
         int vidinsert = 0, vidupdate = 0, viddelete = 0, vidFailInsert = 0;
@@ -265,26 +223,88 @@ public class StorageManager extends Thread {
                 //Log.e(TAG,"新增视频:"+key);
                 if (!mfImpl.add(file))  //往数据库添加文件记录
                 {
+
                     vidFailInsert++;
                 }
                 vidinsert++;
-                Log.v(TAG, "videoMap:" + key + " " + value);
+                Log.v(TAG, "mediaMap insert :" + key + " " + value);
             } else if (value == -1) {  //删除本地文件中没有的数据记录
                 mfImpl.delete(file.getId());
                 viddelete++;
+                Log.v(TAG, "mediaMap delete :" + key + " " + value);
             } else if (value == -2) {
                 mfImpl.update(file);
                 vidupdate++;
+                Log.v(TAG, "mediaMap update :" + key + " " + value);
             }
         }
 
     }
 
 
-
     private boolean cleanStorage() {
+        long pre = System.currentTimeMillis();
+        Log.e(TAG, "start clean");
+        boolean isok = false;
+        int count = 0;
+        delOldMediaFile();
+        long totalSize = StorageUtil.getTFTotalSize(DefaultConfig.ROOT);
+        long availableSize = StorageUtil.getAvailableSize(DefaultConfig.ROOT);
+        int videocount = mfImpl.getMeidaCount(MediaFile.MediaType.VIDEO, null, null);
+        long myTotalUsedSize = mfImpl.getMeidaSize(null,null,null);
+        if (availableSize < softLimit) {   //可用空间小于软限制且可用空间与本应用所用空间和大于软限制
+            if ((availableSize + myTotalUsedSize) > softLimit) {
+                while (StorageUtil.getAvailableSize(DefaultConfig.ROOT) < softLimit && count < videocount) {           //循环删除，直到可用空间大于软限制
+                    delOldMediaFile();
+                    count++;
+                }
+                if (StorageUtil.getAvailableSize(DefaultConfig.ROOT) > softLimit) {
+                    isok = true;
+                } else {        ///循环删除未能使剩余空间大于软限制
+                    Toast.makeText(mService, "录像空间不足(剩余：" + StorageUtil.getAvailableSize(DefaultConfig.ROOT) / 1024 / 1024 + "M)，请手动清理存储。", Toast.LENGTH_LONG).show();
+                    isok = false;
+                }
+            } else {// 可用空间小于软限制 且可用空间与本应用所用空间 和 小于软限制
+                syncMediaFile(); //有可能是数据库没同步，强制同步数据库
+                long myMediaAndAvailable = mfImpl.getMeidaSize(null,null,null) + StorageUtil.getAvailableSize(DefaultConfig.ROOT);
+                if (myMediaAndAvailable < DefaultConfig.SOFT_LIMIT) {
+                    Toast.makeText(mService, "SD卡剩余空间低于" + hardLimit / 1024 / 1024 + "M,请手动清理存储", Toast.LENGTH_LONG).show();
+                }
+                isok = true;
+                if (availableSize < hardLimit) {
+                    Toast.makeText(mService, "存储空间低于最低限制，录像将停止", Toast.LENGTH_LONG).show();
+                    isok = false;
+                }
+            }
+        } else {
+            isok = true;
+        }
 
-        return true;
+        Log.v(TAG, "清理文件用时：" + (System.currentTimeMillis() - pre) + "ms");
+        return isok;
+    }
+
+    private void delOldMediaFile(){  //删除最老视频文件
+        String oldFilePath = mfImpl.mostOldFilePath(MediaFile.MediaType.VIDEO, MediaFile.EventType.NORMAL);
+        new File(oldFilePath).delete();
+    }
+
+    private void makedirs(){
+        File file = new File(DefaultConfig.NORMAL_VIDEO_DIR);
+        if(!file.exists()) file.mkdirs();
+        file = new File(DefaultConfig.LOCK_VIDEO_PATH);
+        if(!file.exists()) file.mkdirs();
+        file = new File(DefaultConfig.UPLOAD_VIDEO_PATH);
+        if(!file.exists()) file.mkdirs();
+        file = new File(DefaultConfig.TAKE_PICTURE_PATH);
+        if(!file.exists()) file.mkdirs();
+        file = new File(DefaultConfig.UPLOAD_PICTURE_PATH);
+        if(!file.exists()) file.mkdirs();
+        file = new File(DefaultConfig.THUMBNAIL_PATH);
+        if(!file.exists()) {
+            file.mkdirs();
+            Log.e(TAG,"dir create "+DefaultConfig.THUMBNAIL_PATH);
+        }
     }
     public MediaFileDAOImpl getMfImpl(){
         return mfImpl;
