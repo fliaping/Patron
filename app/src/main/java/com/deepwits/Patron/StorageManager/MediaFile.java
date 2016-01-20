@@ -20,9 +20,9 @@ public class MediaFile {
     private float latitude; //纬度
     private float longitude;   //经度
     private String thumb_path;  //缩略图路径
-    private EventType event_type;   //事件类型
-    private MediaType media_type;   //媒体类型
-    private CommandOrign command_orign; //指令来源
+    private int event_type;   //事件类型
+    private int media_type;   //媒体类型
+    private int command_origin; //指令来源
 
     public enum EventType {   //事件类型
         NORMAL(1), LOCKED(2), UPLOAD(3);
@@ -38,21 +38,19 @@ public class MediaFile {
         public int get() { return this.i; }
     }
 
-    public enum CommandOrign {   //指令来源
+    public enum CommandOrigin {   //指令来源
         WECHAT(1), APP(2);
         private int i;
-        CommandOrign(int i) { this.i = i; }
+        CommandOrigin(int i) { this.i = i; }
         public int get() { return this.i; }
     }
 
     //构造函数
-    public MediaFile() {
+    public MediaFile(){
+
     }
-    public MediaFile(String path) {
-        this.path = path;
-        if(null!=path){
-            setFilename(null);
-        }
+    public MediaFile(String path){
+        setPath(path);
     }
 
     public int getId() {
@@ -99,16 +97,16 @@ public class MediaFile {
         return longitude;
     }
 
-    public EventType getEventType() {
+    public int getEventType() {
         return event_type;
     }
 
-    public MediaType getMediaType() {
+    public int getMediaType() {
         return media_type;
     }
 
-    public CommandOrign getCommandOrign() {
-        return command_orign;
+    public int getCommandOrign() {
+        return command_origin;
     }
 
     /**
@@ -122,17 +120,19 @@ public class MediaFile {
     }
 
     public void setFilename(String filename) {
-        if(null != path){               //路径不为空,则根据路径分割出文件名
+        if(null == filename){               //参数为空,则根据路径分割出文件名
             this.filename = splitFileName();
-        }else {                         //路径为空,根据参数设置
+        }else {                         //参数不为空,根据参数设置
             this.filename = filename;
         }
     }
 
     public void setPath(String path) {
         this.path = path;
-        setFilename(null);  //有了路径后就可自动设置文件名和媒体类型
-        setMediaType(null);
+        if(null != path){
+            setFilename(null);  //有了路径后就可自动设置文件名和媒体类型
+            setMediaType(-1);
+        }
     }
 
     public void setSize(long size) {
@@ -167,26 +167,26 @@ public class MediaFile {
         this.longitude = longitude;
     }
 
-    public void setEventType(EventType event_type) {
+    public void setEventType(int event_type) {
         this.event_type = event_type;
     }
 
-    public void setMediaType(MediaType media_type) {
-        if(null != path){               //若路径不为空,则根据路径判断媒体类型
+    public void setMediaType(int media_type) {
+        if(-1 == media_type){               //若参数为空,则根据路径判断媒体类型
             String tmp = splitPostfix(path);
             if("mp4".equalsIgnoreCase(tmp)){
-                this.media_type = MediaType.VIDEO;
+                this.media_type = MediaType.VIDEO.get();
             }
             if("jpg".equalsIgnoreCase(tmp)){
-                this.media_type = MediaType.PICTURE;
+                this.media_type = MediaType.PICTURE.get();
             }
-        }else {                         //若路径为空,则根据参数设置
+        }else {                         //若参数不为空,则根据参数设置
             this.media_type = media_type;
         }
     }
 
-    public void setCommandOrign(CommandOrign command_orign) {
-        this.command_orign = command_orign;
+    public void setCommandOrign(int command_orign) {
+        this.command_origin = command_orign;
     }
 
     /**
@@ -196,7 +196,7 @@ public class MediaFile {
     private String splitFileName(){
         int tmp = path.lastIndexOf(File.separator);
         if(tmp>0 && tmp<path.length()){
-            return path.substring(tmp+1,path.length()-1);
+            return path.substring(tmp+1,path.length());
         }else {
             return null;
         }
@@ -210,7 +210,7 @@ public class MediaFile {
     private String splitPostfix(String src){
         int tmp = src.lastIndexOf(".");
         if(tmp>0 && tmp<src.length()){
-            return src.substring(tmp+1,src.length()-1);
+            return src.substring(tmp+1,src.length());
         }else {
             return null;
         }

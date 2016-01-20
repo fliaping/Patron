@@ -11,7 +11,7 @@ import java.util.TimerTask;
 
 /**
  * Created by Payne on 1/13/16.
- * 针对不支持TF热插拔的机器,自定义TF事件广播
+ * 存储事件广播
  */
 public class StorageBroadcast extends TimerTask{
     public final static String ACTION_MEDIA_MOUNTED = "com.deepwits.Patron.StorageManager.MEDIA_MOUNTED";

@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -238,7 +239,7 @@ public class StorageUtil {
         int mIdx = 0;
         if (isForword) {
             while (slashMatcher.find()) {
-                Log.e(TAG, "slashMatcher.find()");
+                Log.e(TAG, "slashMatcher");
                 mIdx++;
                 //当"sub"符号第n次出现的位置
                 if (mIdx == n) {
@@ -321,7 +322,19 @@ public class StorageUtil {
         boolean ret = parentFile.exists();
         return ret;
     }
+    public static String getRandomString(int length) { //length表示生成字符串的长度
+        String base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        Random random = new Random();
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < length; i++) {
+            int number = random.nextInt(base.length());
+            sb.append(base.charAt(number));
+        }
+        return sb.toString();
+    }
+
 }
+
 
   /*  *//**
      * 该函数获取路径的倒数第 countDown 个字符串,example : "/a/b/c/d",coutDown为1时返回d

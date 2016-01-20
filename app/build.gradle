@@ -5,7 +5,7 @@ android {
     buildToolsVersion "23.0.2"
 
     defaultConfig {
-        applicationId "deepwits.com.patron"
+        applicationId "com.deepwits.patron"
         minSdkVersion 19
         targetSdkVersion 23
         versionCode 1
