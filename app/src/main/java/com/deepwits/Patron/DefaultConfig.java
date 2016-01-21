@@ -40,7 +40,7 @@ public class DefaultConfig {
     }
     public static boolean ok() throws IOException{
         String ROOT = StorageUtil.getStorageDir();
-        ROOT = "/storage/sdcard1";
+        ROOT = "/storage/sdcard0";
         if(ROOT == null){
             throw new IOException("SD卡未准备好");
         }else{

@@ -2,6 +2,7 @@ package com.deepwits.Patron.DataBase;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.provider.MediaStore;
 
 import com.deepwits.Patron.DataBase.DBOpenHelper;
 import com.deepwits.Patron.DefaultConfig;
@@ -9,6 +10,7 @@ import com.deepwits.Patron.Recorder.RecordService;
 import com.deepwits.Patron.StorageManager.FileResolve;
 import com.deepwits.Patron.StorageManager.MediaFile;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -368,6 +370,56 @@ public class MediaFileDAOImpl {
         }
         db.close();
         return  result;//返回最老正常视频文件路径
+    }
+
+    /**
+     * 锁定文件实现,移动到LOCK文件夹,更新数据库
+     * @param id  文件ID
+     * @return true or false
+     */
+    public boolean lockFileImpl(int id){
+        MediaFile mediaFile = queryById(id);
+        mediaFile.setEventType(MediaFile.EventType.LOCKED.get());
+        File srcFile = new File(mediaFile.getPath());
+        File desFile = new File(DefaultConfig.LOCK_VIDEO_PATH);
+
+        if(srcFile.renameTo(desFile)) {
+            return update(mediaFile);
+        }else {
+            return false;
+        }
+    }
+    /**
+     * 解锁文件实现,移动到NORMAL文件夹,更新数据库
+     * @param id  文件ID
+     * @return true or false
+     */
+    public boolean unlockFileImpl(int id){
+        MediaFile mediaFile = queryById(id);
+        mediaFile.setEventType(MediaFile.EventType.NORMAL.get());
+        File srcFile = new File(mediaFile.getPath());
+        File desFile = new File(DefaultConfig.NORMAL_VIDEO_PATH);
+
+        if(srcFile.renameTo(desFile)) {
+            return update(mediaFile);
+        }else {
+            return false;
+        }
+    }
+    /**
+     * 删除文件实现,删除文件,删除数据库记录
+     * @param id  文件ID
+     * @return true or false
+     */
+    public boolean deleteFileImpl(int id){
+        MediaFile mediaFile =  queryById(id);
+        File file = new File(mediaFile.getPath());
+        if(file.delete()){
+            return delete(id);
+        }else {
+            return false;
+        }
+
     }
 
 }

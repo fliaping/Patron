@@ -35,7 +35,6 @@ public class StorageUtil {
             //path = pathList.get(0); //   /storage/sdcard0*/
             return path;
         }
-        path = "/storage/sdcard0";
         return path;
     }
 
