@@ -142,6 +142,7 @@ public class SessionBuilder {
 			video.setSurfaceView(mSurfaceView);
 			video.setPreviewOrientation(mOrientation);
 			video.setDestinationPorts(5006);
+			video.setStreamingMethod(MediaStream.MODE_MEDIACODEC_API_2);
 		}
 
 		if (session.getAudioTrack()!=null) {
