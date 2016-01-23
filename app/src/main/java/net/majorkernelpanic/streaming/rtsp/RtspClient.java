@@ -20,6 +20,15 @@
 
 package net.majorkernelpanic.streaming.rtsp;
 
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
+import android.util.Log;
+
+import net.majorkernelpanic.streaming.Session;
+import net.majorkernelpanic.streaming.Stream;
+import net.majorkernelpanic.streaming.rtp.RtpSocket;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,14 +44,6 @@ import java.util.Locale;
 import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import net.majorkernelpanic.streaming.Session;
-import net.majorkernelpanic.streaming.Stream;
-import net.majorkernelpanic.streaming.rtp.RtpSocket;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Looper;
-import android.util.Log;
 
 /**
  * RFC 2326.
@@ -88,7 +89,7 @@ public class RtspClient {
 	private int mState = 0;
 
 	private class Parameters {
-		public String host; 
+		public String host;
 		public String username;
 		public String password;
 		public String path;
@@ -219,20 +220,20 @@ public class RtspClient {
 
 	/**
 	 * Connects to the RTSP server to publish the stream, and the effectively starts streaming.
-	 * You need to call {@link #setServerAddress(String, int)} and optionally {@link #setSession(Session)} 
+	 * You need to call {@link #setServerAddress(String, int)} and optionally {@link #setSession(Session)}
 	 * and {@link #setCredentials(String, String)} before calling this.
 	 * Should be called of the main thread !
 	 */
 	public void startStream() {
 		if (mTmpParameters.host == null) throw new IllegalStateException("setServerAddress(String,int) has not been called !");
 		if (mTmpParameters.session == null) throw new IllegalStateException("setSession() has not been called !");
-		mHandler.post(new Runnable () {
+		mHandler.post(new Runnable() {
 			@Override
 			public void run() {
 				if (mState != STATE_STOPPED) return;
 				mState = STATE_STARTING;
 				
-				Log.d(TAG,"Connecting to RTSP server...");
+				Log.d(TAG, "Connecting to RTSP server...");
 				
 				// If the user calls some methods to configure the client, it won't modify its behavior until the stream is restarted
 				mParameters = mTmpParameters.clone();
@@ -273,7 +274,7 @@ public class RtspClient {
 	 * Stops the stream, and informs the RTSP server.
 	 */
 	public void stopStream() {
-		mHandler.post(new Runnable () {
+		mHandler.post(new Runnable() {
 			@Override
 			public void run() {
 				if (mParameters != null && mParameters.session != null) {
@@ -325,16 +326,16 @@ public class RtspClient {
 				"Content-Length: " + body.length() + "\r\n" +
 				"Content-Type: application/sdp\r\n\r\n" +
 				body;
-		Log.i(TAG,request.substring(0, request.indexOf("\r\n")));
+		Log.i(TAG, request.substring(0, request.indexOf("\r\n")));
 
 		mOutputStream.write(request.getBytes("UTF-8"));
 		mOutputStream.flush();
 		Response response = Response.parseResponse(mBufferedReader);
 
 		if (response.headers.containsKey("server")) {
-			Log.v(TAG,"RTSP server name:" + response.headers.get("server"));
+			Log.v(TAG, "RTSP server name:" + response.headers.get("server"));
 		} else {
-			Log.v(TAG,"RTSP server name unknown");
+			Log.v(TAG, "RTSP server name unknown");
 		}
 
 		if (response.headers.containsKey("session")) {
@@ -376,7 +377,7 @@ public class RtspClient {
 					"Content-Type: application/sdp\r\n\r\n" +
 					body;
 
-			Log.i(TAG,request.substring(0, request.indexOf("\r\n")));
+			Log.i(TAG, request.substring(0, request.indexOf("\r\n")));
 
 			mOutputStream.write(request.getBytes("UTF-8"));
 			mOutputStream.flush();
@@ -397,13 +398,13 @@ public class RtspClient {
 		for (int i=0;i<2;i++) {
 			Stream stream = mParameters.session.getTrack(i);
 			if (stream != null) {
-				String params = mParameters.transport==TRANSPORT_TCP ? 
+				String params = mParameters.transport==TRANSPORT_TCP ?
 						("TCP;interleaved="+2*i+"-"+(2*i+1)) : ("UDP;unicast;client_port="+(5000+2*i)+"-"+(5000+2*i+1)+";mode=receive");
 				String request = "SETUP rtsp://"+mParameters.host+":"+mParameters.port+mParameters.path+"/trackID="+i+" RTSP/1.0\r\n" +
 						"Transport: RTP/AVP/"+params+"\r\n" +
 						addHeaders();
 
-				Log.i(TAG,request.substring(0, request.indexOf("\r\n")));
+				Log.i(TAG, request.substring(0, request.indexOf("\r\n")));
 
 				mOutputStream.write(request.getBytes("UTF-8"));
 				mOutputStream.flush();
@@ -424,11 +425,11 @@ public class RtspClient {
 					try {
 						m = Response.rexegTransport.matcher(response.headers.get("transport")); m.find();
 						stream.setDestinationPorts(Integer.parseInt(m.group(3)), Integer.parseInt(m.group(4)));
-						Log.d(TAG, "Setting destination ports: "+Integer.parseInt(m.group(3))+", "+Integer.parseInt(m.group(4)));
+						Log.d(TAG, "Setting destination ports: " + Integer.parseInt(m.group(3)) + ", " + Integer.parseInt(m.group(4)));
 					} catch (Exception e) {
 						e.printStackTrace();
 						int[] ports = stream.getDestinationPorts();
-						Log.d(TAG,"Server did not specify ports, using default ports: "+ports[0]+"-"+ports[1]);
+						Log.d(TAG, "Server did not specify ports, using default ports: " + ports[0] + "-" + ports[1]);
 					}
 				} else {
 					stream.setOutputStream(mOutputStream, (byte)(2*i));
@@ -444,7 +445,7 @@ public class RtspClient {
 		String request = "RECORD rtsp://"+mParameters.host+":"+mParameters.port+mParameters.path+" RTSP/1.0\r\n" +
 				"Range: npt=0.000-\r\n" +
 				addHeaders();
-		Log.i(TAG,request.substring(0, request.indexOf("\r\n")));
+		Log.i(TAG, request.substring(0, request.indexOf("\r\n")));
 		mOutputStream.write(request.getBytes("UTF-8"));
 		mOutputStream.flush();
 		Response.parseResponse(mBufferedReader);
@@ -455,7 +456,7 @@ public class RtspClient {
 	 */
 	private void sendRequestTeardown() throws IOException {
 		String request = "TEARDOWN rtsp://"+mParameters.host+":"+mParameters.port+mParameters.path+" RTSP/1.0\r\n" + addHeaders();
-		Log.i(TAG,request.substring(0, request.indexOf("\r\n")));
+		Log.i(TAG, request.substring(0, request.indexOf("\r\n")));
 		mOutputStream.write(request.getBytes("UTF-8"));
 		mOutputStream.flush();
 	}
@@ -465,7 +466,7 @@ public class RtspClient {
 	 */
 	private void sendRequestOption() throws IOException {
 		String request = "OPTIONS rtsp://"+mParameters.host+":"+mParameters.port+mParameters.path+" RTSP/1.0\r\n" + addHeaders();
-		Log.i(TAG,request.substring(0, request.indexOf("\r\n")));
+		Log.i(TAG, request.substring(0, request.indexOf("\r\n")));
 		mOutputStream.write(request.getBytes("UTF-8"));
 		mOutputStream.flush();
 		Response.parseResponse(mBufferedReader);
@@ -573,15 +574,15 @@ public class RtspClient {
 	static class Response {
 
 		// Parses method & uri
-		public static final Pattern regexStatus = Pattern.compile("RTSP/\\d.\\d (\\d+) (\\w+)",Pattern.CASE_INSENSITIVE);
+		public static final Pattern regexStatus = Pattern.compile("RTSP/\\d.\\d (\\d+) (\\w+)", Pattern.CASE_INSENSITIVE);
 		// Parses a request header
-		public static final Pattern rexegHeader = Pattern.compile("(\\S+):(.+)",Pattern.CASE_INSENSITIVE);
+		public static final Pattern rexegHeader = Pattern.compile("(\\S+):(.+)", Pattern.CASE_INSENSITIVE);
 		// Parses a WWW-Authenticate header
-		public static final Pattern rexegAuthenticate = Pattern.compile("realm=\"(.+)\",\\s+nonce=\"(\\w+)\"",Pattern.CASE_INSENSITIVE);
+		public static final Pattern rexegAuthenticate = Pattern.compile("realm=\"(.+)\",\\s+nonce=\"(\\w+)\"", Pattern.CASE_INSENSITIVE);
 		// Parses a Session header
-		public static final Pattern rexegSession = Pattern.compile("(\\d+)",Pattern.CASE_INSENSITIVE);
+		public static final Pattern rexegSession = Pattern.compile("(\\d+)", Pattern.CASE_INSENSITIVE);
 		// Parses a Transport header
-		public static final Pattern rexegTransport = Pattern.compile("client_port=(\\d+)-(\\d+).+server_port=(\\d+)-(\\d+)",Pattern.CASE_INSENSITIVE);
+		public static final Pattern rexegTransport = Pattern.compile("client_port=(\\d+)-(\\d+).+server_port=(\\d+)-(\\d+)", Pattern.CASE_INSENSITIVE);
 
 
 		public int status;
@@ -611,7 +612,7 @@ public class RtspClient {
 			}
 			if (line==null) throw new SocketException("Connection lost");
 
-			Log.d(TAG, "Response from server: "+response.status);
+			Log.d(TAG, "Response from server: " + response.status);
 
 			return response;
 		}

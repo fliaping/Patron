@@ -20,15 +20,15 @@ package net.majorkernelpanic.streaming.mp4;
  */
 
 
+import android.util.Base64;
+import android.util.Log;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-
-import android.util.Base64;
-import android.util.Log;
 
 /**
  * Parse an mp4 file.
@@ -99,11 +99,11 @@ public class MP4Parser {
 					// 64 bits atom size
 					mFile.read(buffer,0,8);
 					mPos += 8; sum += 8;
-					byteBuffer = ByteBuffer.wrap(buffer,0,8);
+					byteBuffer = ByteBuffer.wrap(buffer, 0, 8);
 					newlen = byteBuffer.getLong()-16;
 				} else {
 					// 32 bits atom size
-					byteBuffer = ByteBuffer.wrap(buffer,0,4);
+					byteBuffer = ByteBuffer.wrap(buffer, 0, 4);
 					newlen = byteBuffer.getInt()-8;
 				}
 
@@ -111,7 +111,7 @@ public class MP4Parser {
 				// "wide" atom would produce a newlen == 0, and we shouldn't throw an exception because of that
 				if (newlen < 0 || newlen == 1061109559) throw new IOException();
 				
-				Log.d(TAG, "Atom -> name: "+name+" position: "+mPos+", length: "+newlen);
+				Log.d(TAG, "Atom -> name: " + name + " position: " + mPos + ", length: " + newlen);
 				sum += newlen;
 				parse(path+'/'+name,newlen);
 
@@ -144,7 +144,7 @@ public class MP4Parser {
 		String c;
 		StringBuilder s = new StringBuilder();
 		for (int i=start;i<start+len;i++) {
-			c = Integer.toHexString(buffer[i]&0xFF);
+			c = Integer.toHexString(buffer[i] & 0xFF);
 			s.append( c.length()<2 ? "0"+c : c );
 		}
 		return s.toString();

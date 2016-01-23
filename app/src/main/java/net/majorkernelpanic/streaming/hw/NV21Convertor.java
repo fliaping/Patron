@@ -20,10 +20,9 @@
 
 package net.majorkernelpanic.streaming.hw;
 
-import java.nio.ByteBuffer;
-
 import android.media.MediaCodecInfo;
-import android.util.Log;
+
+import java.nio.ByteBuffer;
 
 /**
  * Converts from NV21 to YUV420 semi planar or planar.
@@ -130,7 +129,7 @@ public class NV21Convertor {
 				}
 				if (mYPadding>0) {
 					System.arraycopy(data, 0, mBuffer, 0, mSize);
-					System.arraycopy(data, mSize, mBuffer, mSize+mYPadding, mSize/2);
+					System.arraycopy(data, mSize, mBuffer, mSize + mYPadding, mSize / 2);
 					return mBuffer;
 				}
 				return data;
@@ -150,10 +149,10 @@ public class NV21Convertor {
 					}
 				}
 				if (mYPadding == 0) {
-					System.arraycopy(mBuffer, 0, data, mSize, mSize/2);
+					System.arraycopy(mBuffer, 0, data, mSize, mSize / 2);
 				} else {
 					System.arraycopy(data, 0, mBuffer, 0, mSize);
-					System.arraycopy(mBuffer, 0, mBuffer, mSize+mYPadding, mSize/2);
+					System.arraycopy(mBuffer, 0, mBuffer, mSize + mYPadding, mSize / 2);
 					return mBuffer;
 				}
 				return data;

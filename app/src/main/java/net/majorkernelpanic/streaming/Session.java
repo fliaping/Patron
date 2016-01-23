@@ -20,10 +20,10 @@
 
 package net.majorkernelpanic.streaming;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.concurrent.CountDownLatch;
+import android.hardware.Camera.CameraInfo;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
 
 import net.majorkernelpanic.streaming.audio.AudioQuality;
 import net.majorkernelpanic.streaming.audio.AudioStream;
@@ -35,10 +35,10 @@ import net.majorkernelpanic.streaming.gl.SurfaceView;
 import net.majorkernelpanic.streaming.rtsp.RtspClient;
 import net.majorkernelpanic.streaming.video.VideoQuality;
 import net.majorkernelpanic.streaming.video.VideoStream;
-import android.hardware.Camera.CameraInfo;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Looper;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /**
  * You should instantiate this class with the {@link SessionBuilder}.<br />
@@ -90,7 +90,7 @@ public class Session {
 	public final static int ERROR_INVALID_SURFACE = 0x04;
 
 	/** 
-	 * The destination set with {@link Session#setDestination(String)} could not be resolved. 
+	 * The destination set with {@link Session#setDestination(String)} could not be resolved.
 	 * May mean that the phone has no access to the internet, or that the DNS server could not
 	 * resolved the host name.
 	 */
@@ -384,7 +384,7 @@ public class Session {
 			throws CameraInUseException, 
 			StorageUnavailableException,
 			ConfNotSupportedException, 
-			InvalidSurfaceException, 
+			InvalidSurfaceException,
 			RuntimeException,
 			IOException {
 
@@ -440,7 +440,7 @@ public class Session {
 			throws CameraInUseException, 
 			StorageUnavailableException,
 			ConfNotSupportedException, 
-			InvalidSurfaceException, 
+			InvalidSurfaceException,
 			UnknownHostException,
 			IOException {
 
@@ -491,7 +491,7 @@ public class Session {
 			throws CameraInUseException, 
 			StorageUnavailableException,
 			ConfNotSupportedException, 
-			InvalidSurfaceException, 
+			InvalidSurfaceException,
 			UnknownHostException,
 			IOException {
 
@@ -614,7 +614,7 @@ public class Session {
 
 	/**
 	 * Returns the id of the camera currently selected. <br />
-	 * It can be either {@link CameraInfo#CAMERA_FACING_BACK} or 
+	 * It can be either {@link CameraInfo#CAMERA_FACING_BACK} or
 	 * {@link CameraInfo#CAMERA_FACING_FRONT}.
 	 */
 	public int getCamera() {

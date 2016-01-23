@@ -78,6 +78,7 @@ public class Command {
                         Log.e(TAG,"未定义指令 lock_file - "+action);
                     }
                 case "delete_file" :
+                    Log.e("MediaFileDAOImpl","receive delete broadcast");
                     int fileIds_1[] = intent.getIntArrayExtra("file_id");
                     mRecordService.deleteFiles(fileIds_1);
 
@@ -129,6 +130,7 @@ public class Command {
             if(rtspPort != null){
                 editor.putInt(DefaultConfig.RTSP_PORT, Integer.parseInt(rtspPort));
             }
+            editor.commit();
         }
     }
 

@@ -20,18 +20,16 @@
 
 package net.majorkernelpanic.streaming.rtcp;
 
-import static net.majorkernelpanic.streaming.rtp.RtpSocket.TRANSPORT_TCP;
-import static net.majorkernelpanic.streaming.rtp.RtpSocket.TRANSPORT_UDP;
+import android.os.SystemClock;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.nio.channels.IllegalSelectorException;
 
-import android.os.SystemClock;
-import android.util.Log;
+import static net.majorkernelpanic.streaming.rtp.RtpSocket.TRANSPORT_TCP;
+import static net.majorkernelpanic.streaming.rtp.RtpSocket.TRANSPORT_UDP;
 
 /**
  * Implementation of Sender Report RTCP packets.
@@ -70,7 +68,7 @@ public class SenderReport {
 		/*									 | |---------------------								*/
 		/*									 | ||													*/
 		/*									 | ||													*/
-		mBuffer[0] = (byte) Integer.parseInt("10000000",2);
+		mBuffer[0] = (byte) Integer.parseInt("10000000", 2);
 
 		/* Packet Type PT */
 		mBuffer[1] = (byte) 200;
@@ -117,7 +115,7 @@ public class SenderReport {
 	 * @param length The length of the packet 
 	 * @param rtpts
 	 *            The RTP timestamp.
-	 * @throws IOException 
+	 * @throws IOException
 	 **/
 	public void update(int length, long rtpts) throws IOException {
 		mPacketCount += 1;

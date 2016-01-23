@@ -10,7 +10,7 @@ import java.io.IOException;
 /**
  * Created by Payne on 1/13/16.
  */
-public class DefaultConfig {
+public class Config {
     /**
      * 应用目录结构：
      * --ROOT
@@ -32,7 +32,7 @@ public class DefaultConfig {
      * |-- UPLOAD_20150924000000.jpg
      */
 
-    public DefaultConfig(){
+    public Config(){
         ROOT = StorageUtil.getStorageDir();
         if(ROOT == null){
             return;
@@ -40,7 +40,7 @@ public class DefaultConfig {
     }
     public static boolean ok() throws IOException{
         String ROOT = StorageUtil.getStorageDir();
-        ROOT = "/storage/sdcard0";
+        ROOT = "/storage/sdcard1";
         if(ROOT == null){
             throw new IOException("SD卡未准备好");
         }else{

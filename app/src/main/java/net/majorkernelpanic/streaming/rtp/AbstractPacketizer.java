@@ -22,11 +22,8 @@ package net.majorkernelpanic.streaming.rtp;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.util.Random;
-
-import net.majorkernelpanic.streaming.rtcp.SenderReport;
 
 /**
  * 
@@ -97,7 +94,7 @@ abstract public class AbstractPacketizer {
 	/** For debugging purposes. */
 	protected static String printBuffer(byte[] buffer, int start,int end) {
 		String str = "";
-		for (int i=start;i<end;i++) str+=","+Integer.toHexString(buffer[i]&0xFF);
+		for (int i=start;i<end;i++) str+=","+ Integer.toHexString(buffer[i] & 0xFF);
 		return str;
 	}
 

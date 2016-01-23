@@ -20,14 +20,15 @@
 
 package net.majorkernelpanic.streaming.audio;
 
-import java.io.FileDescriptor;
-import java.io.IOException;
-import java.io.InputStream;
-
-import net.majorkernelpanic.streaming.MediaStream;
 import android.media.MediaRecorder;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
+
+import net.majorkernelpanic.streaming.MediaStream;
+
+import java.io.FileDescriptor;
+import java.io.IOException;
+import java.io.InputStream;
 
 /** 
  * Don't use this class directly.
@@ -73,7 +74,7 @@ public abstract class AudioStream  extends MediaStream {
 		// We need a local socket to forward data output by the camera to the packetizer
 		createSockets();
 
-		Log.v(TAG,"Requested audio with "+mQuality.bitRate/1000+"kbps"+" at "+mQuality.samplingRate/1000+"kHz");
+		Log.v(TAG, "Requested audio with " + mQuality.bitRate / 1000 + "kbps" + " at " + mQuality.samplingRate / 1000 + "kHz");
 		
 		mMediaRecorder = new MediaRecorder();
 		mMediaRecorder.setAudioSource(mAudioSource);

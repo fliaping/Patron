@@ -20,10 +20,10 @@
 
 package net.majorkernelpanic.streaming.rtp;
 
-import java.io.IOException;
-
 import android.annotation.SuppressLint;
 import android.util.Log;
+
+import java.io.IOException;
 
 /**
  * 
@@ -102,7 +102,7 @@ public class H264Packetizer extends AbstractPacketizer implements Runnable {
 
 	public void run() {
 		long duration = 0;
-		Log.d(TAG,"H264 packetizer started !");
+		Log.d(TAG, "H264 packetizer started !");
 		stats.reset();
 		count = 0;
 
@@ -132,7 +132,7 @@ public class H264Packetizer extends AbstractPacketizer implements Runnable {
 		} catch (IOException e) {
 		} catch (InterruptedException e) {}
 
-		Log.d(TAG,"H264 packetizer stopped !");
+		Log.d(TAG, "H264 packetizer stopped !");
 
 	}
 
@@ -178,7 +178,7 @@ public class H264Packetizer extends AbstractPacketizer implements Runnable {
 		// The stream already contains NAL unit type 7 or 8, we don't need 
 		// to add them to the stream ourselves
 		if (type == 7 || type == 8) {
-			Log.v(TAG,"SPS or PPS present in the stream.");
+			Log.v(TAG, "SPS or PPS present in the stream.");
 			count++;
 			if (count>4) {
 				sps = null;
@@ -253,7 +253,7 @@ public class H264Packetizer extends AbstractPacketizer implements Runnable {
 	private void resync() throws IOException {
 		int type;
 
-		Log.e(TAG,"Packetizer out of sync ! Let's try to fix that...(NAL length: "+naluLength+")");
+		Log.e(TAG, "Packetizer out of sync ! Let's try to fix that...(NAL length: " + naluLength + ")");
 
 		while (true) {
 
@@ -269,13 +269,13 @@ public class H264Packetizer extends AbstractPacketizer implements Runnable {
 				naluLength = header[3]&0xFF | (header[2]&0xFF)<<8 | (header[1]&0xFF)<<16 | (header[0]&0xFF)<<24;
 				if (naluLength>0 && naluLength<100000) {
 					oldtime = System.nanoTime();
-					Log.e(TAG,"A NAL unit may have been found in the bit stream !");
+					Log.e(TAG, "A NAL unit may have been found in the bit stream !");
 					break;
 				}
 				if (naluLength==0) {
-					Log.e(TAG,"NAL unit with NULL size found...");
+					Log.e(TAG, "NAL unit with NULL size found...");
 				} else if (header[3]==0xFF && header[2]==0xFF && header[1]==0xFF && header[0]==0xFF) {
-					Log.e(TAG,"NAL unit with 0xFFFFFFFF size found...");
+					Log.e(TAG, "NAL unit with 0xFFFFFFFF size found...");
 				}
 			}
 

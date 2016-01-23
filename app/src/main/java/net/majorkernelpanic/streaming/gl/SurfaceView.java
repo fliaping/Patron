@@ -20,10 +20,6 @@
 
 package net.majorkernelpanic.streaming.gl;
 
-import java.util.concurrent.Semaphore;
-
-import net.majorkernelpanic.streaming.MediaStream;
-import net.majorkernelpanic.streaming.video.VideoStream;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.graphics.SurfaceTexture.OnFrameAvailableListener;
@@ -32,6 +28,11 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
+
+import net.majorkernelpanic.streaming.MediaStream;
+import net.majorkernelpanic.streaming.video.VideoStream;
+
+import java.util.concurrent.Semaphore;
 
 /**
  * An enhanced SurfaceView in which the camera preview will be rendered. 
@@ -116,7 +117,7 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 	}
 
 	public void startGLThread() {
-		Log.d(TAG,"Thread started.");
+		Log.d(TAG, "Thread started.");
 		if (mTextureManager == null) {
 			mTextureManager = new TextureManager();
 		}
@@ -161,7 +162,7 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 						}
 
 					} else {
-						Log.e(TAG,"No frame received !");
+						Log.e(TAG, "No frame received !");
 					}
 				}
 			}
@@ -263,10 +264,10 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 		 * @param aspectRatio The aspect ratio to calculate measurements in respect to 
 		 */
 		public void measure(int widthMeasureSpec, int heightMeasureSpec, double aspectRatio) {
-			int widthMode = MeasureSpec.getMode( widthMeasureSpec );
-			int widthSize = widthMode == MeasureSpec.UNSPECIFIED ? Integer.MAX_VALUE : MeasureSpec.getSize( widthMeasureSpec );
-			int heightMode = MeasureSpec.getMode( heightMeasureSpec );
-			int heightSize = heightMode == MeasureSpec.UNSPECIFIED ? Integer.MAX_VALUE : MeasureSpec.getSize( heightMeasureSpec );
+			int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+			int widthSize = widthMode == MeasureSpec.UNSPECIFIED ? Integer.MAX_VALUE : MeasureSpec.getSize(widthMeasureSpec);
+			int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+			int heightSize = heightMode == MeasureSpec.UNSPECIFIED ? Integer.MAX_VALUE : MeasureSpec.getSize(heightMeasureSpec);
 
 			if ( heightMode == MeasureSpec.EXACTLY && widthMode == MeasureSpec.EXACTLY ) {
 				/* 
@@ -279,14 +280,14 @@ public class SurfaceView extends android.view.SurfaceView implements Runnable, O
 				/*
 				 * Possibility 2: Width dynamic, height fixed
 				 */
-				measuredWidth = (int) Math.min( widthSize, heightSize * aspectRatio );
+				measuredWidth = (int) Math.min(widthSize, heightSize * aspectRatio);
 				measuredHeight = (int) (measuredWidth / aspectRatio);
 
 			} else if ( widthMode == MeasureSpec.EXACTLY ) {
 				/*
 				 * Possibility 3: Width fixed, height dynamic
 				 */
-				measuredHeight = (int) Math.min( heightSize, widthSize / aspectRatio );
+				measuredHeight = (int) Math.min(heightSize, widthSize / aspectRatio);
 				measuredWidth = (int) (measuredHeight * aspectRatio);
 
 			} else {

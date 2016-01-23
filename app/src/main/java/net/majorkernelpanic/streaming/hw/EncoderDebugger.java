@@ -20,12 +20,6 @@
 
 package net.majorkernelpanic.streaming.hw;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.nio.ByteBuffer;
-
-import net.majorkernelpanic.streaming.hw.CodecManager.Codec;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -38,6 +32,13 @@ import android.os.Build;
 import android.preference.PreferenceManager;
 import android.util.Base64;
 import android.util.Log;
+
+import net.majorkernelpanic.streaming.hw.CodecManager.Codec;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.ByteBuffer;
 
 /**
  * 
@@ -165,7 +166,7 @@ public class EncoderDebugger {
 		// If testing the phone again is not needed, 
 		// we just restore the result from the shared preferences
 		if (!checkTestNeeded()) {
-			String resolution = mWidth+"x"+mHeight+"-";			
+			String resolution = mWidth+"x"+mHeight+"-";
 
 			boolean success = mPreferences.getBoolean(PREF_PREFIX+resolution+"success",false);
 			if (!success) {
@@ -186,7 +187,7 @@ public class EncoderDebugger {
 			return;
 		}
 
-		if (VERBOSE) Log.d(TAG, ">>>> Testing the phone for resolution "+mWidth+"x"+mHeight);
+		if (VERBOSE) Log.d(TAG, ">>>> Testing the phone for resolution " + mWidth + "x" + mHeight);
 		
 		// Builds a list of available encoders and decoders we may be able to use
 		// because they support some nice color formats
@@ -206,7 +207,7 @@ public class EncoderDebugger {
 				mEncoderName = encoders[i].name;
 				mEncoderColorFormat = encoders[i].formats[j];
 
-				if (VERBOSE) Log.v(TAG, ">> Test "+(n++)+"/"+count+": "+mEncoderName+" with color format "+mEncoderColorFormat+" at "+mWidth+"x"+mHeight);
+				if (VERBOSE) Log.v(TAG, ">> Test " + (n++) + "/" + count + ": " + mEncoderName + " with color format " + mEncoderColorFormat + " at " + mWidth + "x" + mHeight);
 				
 				// Converts from NV21 to YUV420 with the specified parameters
 				mNV21.setSize(mWidth, mHeight);
@@ -225,7 +226,7 @@ public class EncoderDebugger {
 					configureEncoder();
 					searchSPSandPPS();
 					
-					if (VERBOSE) Log.v(TAG, "SPS and PPS in b64: SPS="+mB64SPS+", PPS="+mB64PPS);
+					if (VERBOSE) Log.v(TAG, "SPS and PPS in b64: SPS=" + mB64SPS + ", PPS=" + mB64PPS);
 
 					// Feeds the encoder with an image repeatedly to produce some NAL units
 					encode();
@@ -239,16 +240,16 @@ public class EncoderDebugger {
 							try {
 								configureDecoder();
 							} catch (Exception e) {
-								if (VERBOSE) Log.d(TAG, mDecoderName+" can't be used with "+mDecoderColorFormat+" at "+mWidth+"x"+mHeight);
+								if (VERBOSE) Log.d(TAG, mDecoderName + " can't be used with " + mDecoderColorFormat + " at " + mWidth + "x" + mHeight);
 								releaseDecoder();
 								break;
 							}
 							try {
 								decode(true);
-								if (VERBOSE) Log.d(TAG, mDecoderName+" successfully decoded the NALs (color format "+mDecoderColorFormat+")");
+								if (VERBOSE) Log.d(TAG, mDecoderName + " successfully decoded the NALs (color format " + mDecoderColorFormat + ")");
 								decoded = true;
 							} catch (Exception e) {
-								if (VERBOSE) Log.e(TAG, mDecoderName+" failed to decode the NALs");
+								if (VERBOSE) Log.e(TAG, mDecoderName + " failed to decode the NALs");
 								e.printStackTrace();
 							} finally {
 								releaseDecoder();
@@ -268,7 +269,7 @@ public class EncoderDebugger {
 					int padding;
 					if ((padding = checkPaddingNeeded())>0) {
 						if (padding<4096) {
-							if (VERBOSE) Log.d(TAG, "Some padding is needed: "+padding);
+							if (VERBOSE) Log.d(TAG, "Some padding is needed: " + padding);
 							mNV21.setYPadding(padding);
 							createTestImage();
 							mData = mNV21.convert(mInitialImage);
@@ -291,7 +292,7 @@ public class EncoderDebugger {
 					}
 
 					saveTestResult(true);
-					Log.v(TAG, "The encoder "+mEncoderName+" is usable with resolution "+mWidth+"x"+mHeight);
+					Log.v(TAG, "The encoder " + mEncoderName + " is usable with resolution " + mWidth + "x" + mHeight);
 					return;
 
 				} catch (Exception e) {
@@ -310,7 +311,7 @@ public class EncoderDebugger {
 		}
 
 		saveTestResult(false);
-		Log.e(TAG,"No usable encoder were found on the phone for resolution "+mWidth+"x"+mHeight);
+		Log.e(TAG, "No usable encoder were found on the phone for resolution " + mWidth + "x" + mHeight);
 		throw new RuntimeException("No usable encoder were found on the phone for resolution "+mWidth+"x"+mHeight);
 
 	}
@@ -412,9 +413,9 @@ public class EncoderDebugger {
 				if (i>0) {
 					r[k] = ((i>>6)<<6);
 					max = r[k]>max ? r[k] : max;
-					if (VERBOSE) Log.e(TAG,"Padding needed: "+r[k]);
+					if (VERBOSE) Log.e(TAG, "Padding needed: " + r[k]);
 				} else {
-					if (VERBOSE) Log.v(TAG,"No padding needed.");
+					if (VERBOSE) Log.v(TAG, "No padding needed.");
 				}
 			}
 		}
@@ -526,11 +527,11 @@ public class EncoderDebugger {
 	 * Instantiates and starts the encoder.
 	 * @throws IOException The encoder cannot be configured
 	 */
-	private void configureEncoder() throws IOException  {
+	private void configureEncoder() throws IOException {
 		mEncoder = MediaCodec.createByCodecName(mEncoderName);
 		MediaFormat mediaFormat = MediaFormat.createVideoFormat(MIME_TYPE, mWidth, mHeight);
 		mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, BITRATE);
-		mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, FRAMERATE);	
+		mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, FRAMERATE);
 		mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, mEncoderColorFormat);
 		mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
 		mEncoder.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
@@ -555,7 +556,7 @@ public class EncoderDebugger {
 	private void configureDecoder() throws IOException {
 		byte[] prefix = new byte[] {0x00,0x00,0x00,0x01};
 
-		ByteBuffer csd0 = ByteBuffer.allocate(4+mSPS.length+4+mPPS.length);
+		ByteBuffer csd0 = ByteBuffer.allocate(4 + mSPS.length + 4 + mPPS.length);
 		csd0.put(new byte[] {0x00,0x00,0x00,0x01});
 		csd0.put(mSPS);
 		csd0.put(new byte[] {0x00,0x00,0x00,0x01});
@@ -577,7 +578,7 @@ public class EncoderDebugger {
 			decInputBuffers[decInputIndex].put(mSPS);
 			mDecoder.queueInputBuffer(decInputIndex, 0, decInputBuffers[decInputIndex].position(), timestamp(), 0);
 		} else {
-			if (VERBOSE) Log.e(TAG,"No buffer available !");
+			if (VERBOSE) Log.e(TAG, "No buffer available !");
 		}
 
 		decInputIndex = mDecoder.dequeueInputBuffer(1000000/FRAMERATE);
@@ -587,7 +588,7 @@ public class EncoderDebugger {
 			decInputBuffers[decInputIndex].put(mPPS);
 			mDecoder.queueInputBuffer(decInputIndex, 0, decInputBuffers[decInputIndex].position(), timestamp(), 0);
 		} else {
-			if (VERBOSE) Log.e(TAG,"No buffer available !");
+			if (VERBOSE) Log.e(TAG, "No buffer available !");
 		}
 
 
@@ -626,7 +627,7 @@ public class EncoderDebugger {
 				inputBuffers[bufferIndex].put(mData, 0, mData.length);
 				mEncoder.queueInputBuffer(bufferIndex, 0, mData.length, timestamp(), 0);
 			} else {
-				if (VERBOSE) Log.e(TAG,"No buffer available !");
+				if (VERBOSE) Log.e(TAG, "No buffer available !");
 			}
 
 			// We are looking for the SPS and the PPS here. As always, Android is very inconsistent, I have observed that some
@@ -664,10 +665,10 @@ public class EncoderDebugger {
 							if (p+3>=len) p=len;
 							if ((csd[q]&0x1F)==7) {
 								mSPS = new byte[p-q];
-								System.arraycopy(csd, q, mSPS, 0, p-q);
+								System.arraycopy(csd, q, mSPS, 0, p - q);
 							} else {
 								mPPS = new byte[p-q];
-								System.arraycopy(csd, q, mPPS, 0, p-q);
+								System.arraycopy(csd, q, mPPS, 0, p - q);
 							}
 							p += 4;
 							q = p;
@@ -704,7 +705,7 @@ public class EncoderDebugger {
 				encInputBuffers[encInputIndex].put(mData, 0, mData.length);
 				mEncoder.queueInputBuffer(encInputIndex, 0, mData.length, timestamp(), 0);
 			} else {
-				if (VERBOSE) Log.d(TAG,"No buffer available !");
+				if (VERBOSE) Log.d(TAG, "No buffer available !");
 			}
 
 			// Tries to get a NAL unit
@@ -766,7 +767,7 @@ public class EncoderDebugger {
 					mDecoder.queueInputBuffer(decInputIndex, 0, l2, timestamp(), 0);
 					i++;
 				} else {
-					if (VERBOSE) Log.d(TAG,"No buffer available !");
+					if (VERBOSE) Log.d(TAG, "No buffer available !");
 				}
 			}
 
@@ -787,7 +788,7 @@ public class EncoderDebugger {
 					convertToNV21(j);
 					if (j>=NB_DECODED-1) {
 						flushMediaCodec(mDecoder);
-						if (VERBOSE) Log.v(TAG, "Decoding "+n+" frames took "+elapsed/1000+" ms");
+						if (VERBOSE) Log.v(TAG, "Decoding " + n + " frames took " + elapsed / 1000 + " ms");
 						return elapsed;
 					}
 					j++;
@@ -839,7 +840,7 @@ public class EncoderDebugger {
 
 	private void check(boolean cond, String message) {
 		if (!cond) {
-			if (VERBOSE) Log.e(TAG,message);
+			if (VERBOSE) Log.e(TAG, message);
 			throw new IllegalStateException(message);
 		}
 	}

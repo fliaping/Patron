@@ -20,9 +20,9 @@
 
 package net.majorkernelpanic.streaming.rtp;
 
-import java.io.IOException;
-
 import android.util.Log;
+
+import java.io.IOException;
 
 /**
  *   RFC 4629.
@@ -113,7 +113,7 @@ public class H263Packetizer extends AbstractPacketizer implements Runnable {
 					socket.markNextPacket();
 					send(j);
 					nextBuffer = socket.requestBuffer();
-					System.arraycopy(buffer,j+2,nextBuffer,rtphl+2,MAXPACKETSIZE-j-2);
+					System.arraycopy(buffer, j + 2, nextBuffer, rtphl + 2, MAXPACKETSIZE - j - 2);
 					buffer = nextBuffer;
 					j = MAXPACKETSIZE-j-2;
 					firstFragment = true;
@@ -123,10 +123,10 @@ public class H263Packetizer extends AbstractPacketizer implements Runnable {
 					send(MAXPACKETSIZE);
 				}
 			}
-		} catch (IOException e) { 
+		} catch (IOException e) {
 		} catch (InterruptedException e) {}
 
-		Log.d(TAG,"H263 Packetizer stopped !");
+		Log.d(TAG, "H263 Packetizer stopped !");
 
 	}
 

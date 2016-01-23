@@ -20,9 +20,9 @@
 
 package net.majorkernelpanic.streaming.rtp;
 
-import java.io.IOException;
-
 import android.util.Log;
+
+import java.io.IOException;
 
 /**
  * 
@@ -82,7 +82,7 @@ public class AMRNBPacketizer extends AbstractPacketizer implements Runnable {
 			fill(header,0,AMR_HEADER_LENGTH);
 			
 			if (header[5] != '\n') {
-				Log.e(TAG,"Bad header ! AMR not correcty supported by the phone !");
+				Log.e(TAG, "Bad header ! AMR not correcty supported by the phone !");
 				return;
 			}
 
@@ -115,10 +115,10 @@ public class AMRNBPacketizer extends AbstractPacketizer implements Runnable {
 				
 			}
 
-		} catch (IOException e) { 
+		} catch (IOException e) {
 		} catch (InterruptedException e) {}
 
-		Log.d(TAG,"AMR packetizer stopped !");
+		Log.d(TAG, "AMR packetizer stopped !");
 
 	}
 

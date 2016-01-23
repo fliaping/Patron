@@ -20,14 +20,6 @@
 
 package net.majorkernelpanic.streaming;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.util.Random;
-
-import net.majorkernelpanic.streaming.audio.AudioStream;
-import net.majorkernelpanic.streaming.rtp.AbstractPacketizer;
-import net.majorkernelpanic.streaming.video.VideoStream;
 import android.annotation.SuppressLint;
 import android.media.MediaCodec;
 import android.media.MediaRecorder;
@@ -37,6 +29,15 @@ import android.net.LocalSocketAddress;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
+
+import net.majorkernelpanic.streaming.audio.AudioStream;
+import net.majorkernelpanic.streaming.rtp.AbstractPacketizer;
+import net.majorkernelpanic.streaming.video.VideoStream;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.util.Random;
 
 /**
  * A MediaRecorder that streams what it records using a packetizer from the RTP package.
@@ -102,10 +103,10 @@ public abstract class MediaStream implements Stream {
 			Class.forName("android.media.MediaCodec");
 			// Will be set to MODE_MEDIACODEC_API at some point...
 			sSuggestedMode = MODE_MEDIACODEC_API;
-			Log.i(TAG,"Phone supports the MediaCoded API");
+			Log.i(TAG, "Phone supports the MediaCoded API");
 		} catch (ClassNotFoundException e) {
 			sSuggestedMode = MODE_MEDIARECORDER_API;
-			Log.i(TAG,"Phone does not support the MediaCodec API");
+			Log.i(TAG, "Phone does not support the MediaCodec API");
 		}
 		
 		// Starting lollipop, the LocalSocket API cannot be used anymore to feed 
@@ -283,7 +284,7 @@ public abstract class MediaStream implements Stream {
 	}
 
 	/** Stops the stream. */
-	@SuppressLint("NewApi") 
+	@SuppressLint("NewApi")
 	public synchronized  void stop() {
 		if (mStreaming) {
 			try {

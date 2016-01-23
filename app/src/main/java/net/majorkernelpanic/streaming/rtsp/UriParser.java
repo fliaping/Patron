@@ -20,19 +20,7 @@
 
 package net.majorkernelpanic.streaming.rtsp;
 
-import static net.majorkernelpanic.streaming.SessionBuilder.AUDIO_AAC;
-import static net.majorkernelpanic.streaming.SessionBuilder.AUDIO_AMRNB;
-import static net.majorkernelpanic.streaming.SessionBuilder.AUDIO_NONE;
-import static net.majorkernelpanic.streaming.SessionBuilder.VIDEO_H263;
-import static net.majorkernelpanic.streaming.SessionBuilder.VIDEO_H264;
-import static net.majorkernelpanic.streaming.SessionBuilder.VIDEO_NONE;
-
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.UnknownHostException;
-import java.util.Set;
+import android.hardware.Camera.CameraInfo;
 
 import net.majorkernelpanic.streaming.MediaStream;
 import net.majorkernelpanic.streaming.Session;
@@ -40,8 +28,22 @@ import net.majorkernelpanic.streaming.SessionBuilder;
 import net.majorkernelpanic.streaming.audio.AudioQuality;
 import net.majorkernelpanic.streaming.video.VideoQuality;
 
-import android.content.ContentValues;
-import android.hardware.Camera.CameraInfo;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.Iterator;
+import java.util.List;
+
+import static net.majorkernelpanic.streaming.SessionBuilder.AUDIO_AAC;
+import static net.majorkernelpanic.streaming.SessionBuilder.AUDIO_AMRNB;
+import static net.majorkernelpanic.streaming.SessionBuilder.AUDIO_NONE;
+import static net.majorkernelpanic.streaming.SessionBuilder.VIDEO_H263;
+import static net.majorkernelpanic.streaming.SessionBuilder.VIDEO_H264;
+import static net.majorkernelpanic.streaming.SessionBuilder.VIDEO_NONE;
 
 /**
  * This class parses URIs received by the RTSP server and configures a Session accordingly.
@@ -66,57 +68,41 @@ public class UriParser {
 		SessionBuilder builder = SessionBuilder.getInstance().clone();
 		byte audioApi = 0, videoApi = 0;
 
-        String[] queryParams = URI.create(uri).getQuery().split("&");
-        ContentValues params = new ContentValues();
-        for(String param:queryParams)
-        {
-            String[] keyValue = param.split("=");
-			String value = "";
-			try {
-				value = keyValue[1];
-			}catch(ArrayIndexOutOfBoundsException e){}
-
-            params.put(
-                    URLEncoder.encode(keyValue[0], "UTF-8"), // Name
-                    URLEncoder.encode(value, "UTF-8")  // Value
-            );
-
-        }
-
+		List<NameValuePair> params = URLEncodedUtils.parse(URI.create(uri),"UTF-8");
 		if (params.size()>0) {
 
 			builder.setAudioEncoder(AUDIO_NONE).setVideoEncoder(VIDEO_NONE);
-            Set<String> paramKeys=params.keySet();
+
 			// Those parameters must be parsed first or else they won't necessarily be taken into account
-            for(String paramName: paramKeys) {
-                String paramValue = params.getAsString(paramName);
+			for (Iterator<NameValuePair> it = params.iterator();it.hasNext();) {
+				NameValuePair param = it.next();
 
 				// FLASH ON/OFF
-				if (paramName.equalsIgnoreCase("flash")) {
-					if (paramValue.equalsIgnoreCase("on")) 
+				if (param.getName().equalsIgnoreCase("flash")) {
+					if (param.getValue().equalsIgnoreCase("on")) 
 						builder.setFlashEnabled(true);
 					else 
 						builder.setFlashEnabled(false);
 				}
 
 				// CAMERA -> the client can choose between the front facing camera and the back facing camera
-				else if (paramName.equalsIgnoreCase("camera")) {
-					if (paramValue.equalsIgnoreCase("back")) 
+				else if (param.getName().equalsIgnoreCase("camera")) {
+					if (param.getValue().equalsIgnoreCase("back")) 
 						builder.setCamera(CameraInfo.CAMERA_FACING_BACK);
-					else if (paramValue.equalsIgnoreCase("front")) 
+					else if (param.getValue().equalsIgnoreCase("front")) 
 						builder.setCamera(CameraInfo.CAMERA_FACING_FRONT);
 				}
 
 				// MULTICAST -> the stream will be sent to a multicast group
 				// The default mutlicast address is 228.5.6.7, but the client can specify another
-				else if (paramName.equalsIgnoreCase("multicast")) {
-					if (paramValue!=null) {
+				else if (param.getName().equalsIgnoreCase("multicast")) {
+					if (param.getValue()!=null) {
 						try {
-							InetAddress addr = InetAddress.getByName(paramValue);
+							InetAddress addr = InetAddress.getByName(param.getValue());
 							if (!addr.isMulticastAddress()) {
 								throw new IllegalStateException("Invalid multicast address !");
 							}
-							builder.setDestination(paramValue);
+							builder.setDestination(param.getValue());
 						} catch (UnknownHostException e) {
 							throw new IllegalStateException("Invalid multicast address !");
 						}
@@ -128,29 +114,29 @@ public class UriParser {
 				}
 
 				// UNICAST -> the client can use this to specify where he wants the stream to be sent
-				else if (paramName.equalsIgnoreCase("unicast")) {
-					if (paramValue!=null) {
-						builder.setDestination(paramValue);
+				else if (param.getName().equalsIgnoreCase("unicast")) {
+					if (param.getValue()!=null) {
+						builder.setDestination(param.getValue());
 					}					
 				}
 				
 				// VIDEOAPI -> can be used to specify what api will be used to encode video (the MediaRecorder API or the MediaCodec API)
-				else if (paramName.equalsIgnoreCase("videoapi")) {
-					if (paramValue!=null) {
-						if (paramValue.equalsIgnoreCase("mr")) {
+				else if (param.getName().equalsIgnoreCase("videoapi")) {
+					if (param.getValue()!=null) {
+						if (param.getValue().equalsIgnoreCase("mr")) {
 							videoApi = MediaStream.MODE_MEDIARECORDER_API;
-						} else if (paramValue.equalsIgnoreCase("mc")) {
+						} else if (param.getValue().equalsIgnoreCase("mc")) {
 							videoApi = MediaStream.MODE_MEDIACODEC_API;
 						}
 					}					
 				}
 				
 				// AUDIOAPI -> can be used to specify what api will be used to encode audio (the MediaRecorder API or the MediaCodec API)
-				else if (paramName.equalsIgnoreCase("audioapi")) {
-					if (paramValue!=null) {
-						if (paramValue.equalsIgnoreCase("mr")) {
+				else if (param.getName().equalsIgnoreCase("audioapi")) {
+					if (param.getValue()!=null) {
+						if (param.getValue().equalsIgnoreCase("mr")) {
 							audioApi = MediaStream.MODE_MEDIARECORDER_API;
-						} else if (paramValue.equalsIgnoreCase("mc")) {
+						} else if (param.getValue().equalsIgnoreCase("mc")) {
 							audioApi = MediaStream.MODE_MEDIACODEC_API;
 						}
 					}					
@@ -158,10 +144,10 @@ public class UriParser {
 
 				// TTL -> the client can modify the time to live of packets
 				// By default ttl=64
-				else if (paramName.equalsIgnoreCase("ttl")) {
-					if (paramValue!=null) {
+				else if (param.getName().equalsIgnoreCase("ttl")) {
+					if (param.getValue()!=null) {
 						try {
-							int ttl = Integer.parseInt(paramValue);
+							int ttl = Integer.parseInt(param.getValue());
 							if (ttl<0) throw new IllegalStateException();
 							builder.setTimeToLive(ttl);
 						} catch (Exception e) {
@@ -171,26 +157,26 @@ public class UriParser {
 				}
 
 				// H.264
-				else if (paramName.equalsIgnoreCase("h264")) {
-					VideoQuality quality = VideoQuality.parseQuality(paramValue);
+				else if (param.getName().equalsIgnoreCase("h264")) {
+					VideoQuality quality = VideoQuality.parseQuality(param.getValue());
 					builder.setVideoQuality(quality).setVideoEncoder(VIDEO_H264);
 				}
 
 				// H.263
-				else if (paramName.equalsIgnoreCase("h263")) {
-					VideoQuality quality = VideoQuality.parseQuality(paramValue);
+				else if (param.getName().equalsIgnoreCase("h263")) {
+					VideoQuality quality = VideoQuality.parseQuality(param.getValue());
 					builder.setVideoQuality(quality).setVideoEncoder(VIDEO_H263);
 				}
 
 				// AMR
-				else if (paramName.equalsIgnoreCase("amrnb") || paramName.equalsIgnoreCase("amr")) {
-					AudioQuality quality = AudioQuality.parseQuality(paramValue);
+				else if (param.getName().equalsIgnoreCase("amrnb") || param.getName().equalsIgnoreCase("amr")) {
+					AudioQuality quality = AudioQuality.parseQuality(param.getValue());
 					builder.setAudioQuality(quality).setAudioEncoder(AUDIO_AMRNB);
 				}
 
 				// AAC
-				else if (paramName.equalsIgnoreCase("aac")) {
-					AudioQuality quality = AudioQuality.parseQuality(paramValue);
+				else if (param.getName().equalsIgnoreCase("aac")) {
+					AudioQuality quality = AudioQuality.parseQuality(param.getValue());
 					builder.setAudioQuality(quality).setAudioEncoder(AUDIO_AAC);
 				}
 

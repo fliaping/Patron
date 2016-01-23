@@ -20,13 +20,14 @@
 
 package net.majorkernelpanic.streaming.audio;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
+import android.media.MediaRecorder;
+import android.service.textservice.SpellCheckerService.Session;
 
 import net.majorkernelpanic.streaming.SessionBuilder;
 import net.majorkernelpanic.streaming.rtp.AMRNBPacketizer;
-import android.media.MediaRecorder;
-import android.service.textservice.SpellCheckerService.Session;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
 
 /**
  * A class for streaming AAC from the camera of an android device using RTP.
@@ -76,7 +77,7 @@ public class AMRNBStream extends AudioStream {
 	 * Returns a description of the stream using SDP. It can then be included in an SDP file.
 	 */	
 	public String getSessionDescription() {
-		return "m=audio "+String.valueOf(getDestinationPorts()[0])+" RTP/AVP 96\r\n" +
+		return "m=audio "+ String.valueOf(getDestinationPorts()[0])+" RTP/AVP 96\r\n" +
 				"a=rtpmap:96 AMR/8000\r\n" +
 				"a=fmtp:96 octet-align=1;\r\n";
 	}

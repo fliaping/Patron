@@ -20,17 +20,6 @@
 
 package net.majorkernelpanic.streaming.audio;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.lang.reflect.Field;
-import java.net.InetAddress;
-import java.nio.ByteBuffer;
-
-import net.majorkernelpanic.streaming.SessionBuilder;
-import net.majorkernelpanic.streaming.rtp.AACADTSPacketizer;
-import net.majorkernelpanic.streaming.rtp.AACLATMPacketizer;
-import net.majorkernelpanic.streaming.rtp.MediaCodecInputStream;
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -44,6 +33,18 @@ import android.os.Build;
 import android.os.Environment;
 import android.service.textservice.SpellCheckerService.Session;
 import android.util.Log;
+
+import net.majorkernelpanic.streaming.SessionBuilder;
+import net.majorkernelpanic.streaming.rtp.AACADTSPacketizer;
+import net.majorkernelpanic.streaming.rtp.AACLATMPacketizer;
+import net.majorkernelpanic.streaming.rtp.MediaCodecInputStream;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.lang.reflect.Field;
+import java.net.InetAddress;
+import java.nio.ByteBuffer;
 
 /**
  * A class for streaming AAC from the camera of an android device using RTP.
@@ -95,10 +96,10 @@ public class AACStream extends AudioStream {
 		super();
 
 		if (!AACStreamingSupported()) {
-			Log.e(TAG,"AAC not supported on this phone");
+			Log.e(TAG, "AAC not supported on this phone");
 			throw new RuntimeException("AAC not supported by this phone !");
 		} else {
-			Log.d(TAG,"AAC supported on this phone");
+			Log.d(TAG, "AAC supported on this phone");
 		}
 
 	}
@@ -165,9 +166,9 @@ public class AACStream extends AudioStream {
 
 			// TODO: streamType always 5 ? profile-level-id always 15 ?
 
-			mSessionDescription = "m=audio "+String.valueOf(getDestinationPorts()[0])+" RTP/AVP 96\r\n" +
+			mSessionDescription = "m=audio "+ String.valueOf(getDestinationPorts()[0])+" RTP/AVP 96\r\n" +
 					"a=rtpmap:96 mpeg4-generic/"+mQuality.samplingRate+"\r\n"+
-					"a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config="+Integer.toHexString(mConfig)+"; SizeLength=13; IndexLength=3; IndexDeltaLength=3;\r\n";
+					"a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config="+ Integer.toHexString(mConfig)+"; SizeLength=13; IndexLength=3; IndexDeltaLength=3;\r\n";
 
 		} else {
 
@@ -175,9 +176,9 @@ public class AACStream extends AudioStream {
 			mChannel = 1;
 			mConfig = (mProfile & 0x1F) << 11 | (mSamplingRateIndex & 0x0F) << 7 | (mChannel & 0x0F) << 3;
 
-			mSessionDescription = "m=audio "+String.valueOf(getDestinationPorts()[0])+" RTP/AVP 96\r\n" +
+			mSessionDescription = "m=audio "+ String.valueOf(getDestinationPorts()[0])+" RTP/AVP 96\r\n" +
 					"a=rtpmap:96 mpeg4-generic/"+mQuality.samplingRate+"\r\n"+
-					"a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config="+Integer.toHexString(mConfig)+"; SizeLength=13; IndexLength=3; IndexDeltaLength=3;\r\n";			
+					"a=fmtp:96 streamtype=5; profile-level-id=15; mode=AAC-hbr; config="+ Integer.toHexString(mConfig)+"; SizeLength=13; IndexLength=3; IndexDeltaLength=3;\r\n";
 
 		}
 
@@ -225,7 +226,7 @@ public class AACStream extends AudioStream {
 							inputBuffers[bufferIndex].clear();
 							len = mAudioRecord.read(inputBuffers[bufferIndex], bufferSize);
 							if (len ==  AudioRecord.ERROR_INVALID_OPERATION || len == AudioRecord.ERROR_BAD_VALUE) {
-								Log.e(TAG,"An error occured with the AudioRecord API !");
+								Log.e(TAG, "An error occured with the AudioRecord API !");
 							} else {
 								//Log.v(TAG,"Pushing raw audio to the decoder: len="+len+" bs: "+inputBuffers[bufferIndex].capacity());
 								mMediaCodec.queueInputBuffer(bufferIndex, 0, len, System.nanoTime()/1000, 0);
@@ -275,7 +276,7 @@ public class AACStream extends AudioStream {
 	 * Records a short sample of AAC ADTS from the microphone to find out what the sampling rate really is
 	 * On some phone indeed, no error will be reported if the sampling rate used differs from the 
 	 * one selected with setAudioSamplingRate 
-	 * @throws IOException 
+	 * @throws IOException
 	 * @throws IllegalStateException
 	 */
 	@SuppressLint("InlinedApi")
@@ -356,11 +357,11 @@ public class AACStream extends AudioStream {
 		// 5 bits for the object type / 4 bits for the sampling rate / 4 bits for the channel / padding
 		mConfig = (mProfile & 0x1F) << 11 | (mSamplingRateIndex & 0x0F) << 7 | (mChannel & 0x0F) << 3;
 
-		Log.i(TAG,"MPEG VERSION: " + ( (buffer[0]&0x08) >> 3 ) );
-		Log.i(TAG,"PROTECTION: " + (buffer[0]&0x01) );
-		Log.i(TAG,"PROFILE: " + AUDIO_OBJECT_TYPES[ mProfile ] );
-		Log.i(TAG,"SAMPLING FREQUENCY: " + mQuality.samplingRate );
-		Log.i(TAG,"CHANNEL: " + mChannel );
+		Log.i(TAG, "MPEG VERSION: " + ((buffer[0] & 0x08) >> 3));
+		Log.i(TAG, "PROTECTION: " + (buffer[0] & 0x01));
+		Log.i(TAG, "PROFILE: " + AUDIO_OBJECT_TYPES[mProfile]);
+		Log.i(TAG, "SAMPLING FREQUENCY: " + mQuality.samplingRate);
+		Log.i(TAG, "CHANNEL: " + mChannel);
 
 		raf.close();
 
@@ -370,7 +371,7 @@ public class AACStream extends AudioStream {
 			editor.commit();
 		}
 
-		if (!file.delete()) Log.e(TAG,"Temp file could not be erased");
+		if (!file.delete()) Log.e(TAG, "Temp file could not be erased");
 
 	}
 

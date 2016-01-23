@@ -20,11 +20,12 @@
 
 package net.majorkernelpanic.streaming.rtp;
 
-import java.io.IOException;
-
-import net.majorkernelpanic.streaming.audio.AACStream;
 import android.os.SystemClock;
 import android.util.Log;
+
+import net.majorkernelpanic.streaming.audio.AACStream;
+
+import java.io.IOException;
 
 /**
  *   
@@ -74,7 +75,7 @@ public class AACADTSPacketizer extends AbstractPacketizer implements Runnable {
 
 	public void run() {
 
-		Log.d(TAG,"AAC ADTS packetizer started !");
+		Log.d(TAG, "AAC ADTS packetizer started !");
 
 		// "A packet SHALL carry either one or more complete Access Units, or a
 		// single fragment of an Access Unit.  Fragments of the same Access Unit
@@ -165,11 +166,11 @@ public class AACADTSPacketizer extends AbstractPacketizer implements Runnable {
 		} catch (IOException e) {
 			// Ignore
 		} catch (ArrayIndexOutOfBoundsException e) {
-			Log.e(TAG,"ArrayIndexOutOfBoundsException: "+(e.getMessage()!=null?e.getMessage():"unknown error"));
+			Log.e(TAG, "ArrayIndexOutOfBoundsException: " + (e.getMessage() != null ? e.getMessage() : "unknown error"));
 			e.printStackTrace();
 		} catch (InterruptedException ignore) {}
 
-		Log.d(TAG,"AAC ADTS packetizer stopped !");
+		Log.d(TAG, "AAC ADTS packetizer stopped !");
 
 	}
 

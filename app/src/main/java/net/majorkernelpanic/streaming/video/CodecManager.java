@@ -20,15 +20,15 @@
 
 package net.majorkernelpanic.streaming.video;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-
 import android.annotation.SuppressLint;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.os.Build;
 import android.util.Log;
 import android.util.SparseArray;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 @SuppressLint("InlinedApi")
 public class CodecManager {
@@ -49,7 +49,7 @@ public class CodecManager {
 	};
 
 	/**
-	 * Contains a list of encoders and color formats that we may use with a {@link CodecManager.Translator}.  
+	 * Contains a list of encoders and color formats that we may use with a {@link CodecManager.Translator}.
 	 */
 	static class Codecs {
 		/** A hardware encoder supporting a color format we can use. */
@@ -92,14 +92,14 @@ public class CodecManager {
 				} catch (Exception e) {}
 
 				if (list.hardwareCodec != null) {
-					Log.v(TAG,"Choosen primary codec: "+list.hardwareCodec+" with color format: "+list.hardwareColorFormat);
+					Log.v(TAG, "Choosen primary codec: " + list.hardwareCodec + " with color format: " + list.hardwareColorFormat);
 				} else {
-					Log.e(TAG,"No supported hardware codec found !");
+					Log.e(TAG, "No supported hardware codec found !");
 				}
 				if (list.softwareCodec != null) {
-					Log.v(TAG,"Choosen secondary codec: "+list.hardwareCodec+" with color format: "+list.hardwareColorFormat);
+					Log.v(TAG, "Choosen secondary codec: " + list.hardwareCodec + " with color format: " + list.hardwareColorFormat);
 				} else {
-					Log.e(TAG,"No supported software codec found !");
+					Log.e(TAG, "No supported software codec found !");
 				}
 				return list;
 			}
@@ -120,14 +120,14 @@ public class CodecManager {
 			}
 
 			if (list.hardwareCodec != null) {
-				Log.v(TAG,"Choosen primary codec: "+list.hardwareCodec+" with color format: "+list.hardwareColorFormat);
+				Log.v(TAG, "Choosen primary codec: " + list.hardwareCodec + " with color format: " + list.hardwareColorFormat);
 			} else {
-				Log.e(TAG,"No supported hardware codec found !");
+				Log.e(TAG, "No supported hardware codec found !");
 			}
 			if (list.softwareCodec != null) {
-				Log.v(TAG,"Choosen secondary codec: "+list.hardwareCodec+" with color format: "+list.softwareColorFormat);
+				Log.v(TAG, "Choosen secondary codec: " + list.hardwareCodec + " with color format: " + list.softwareColorFormat);
 			} else {
-				Log.e(TAG,"No supported software codec found !");
+				Log.e(TAG, "No supported software codec found !");
 			}
 
 			return list;
@@ -146,7 +146,7 @@ public class CodecManager {
 				return; 
 			}
 
-			Log.v(TAG,"Searching supported color formats for mime type \""+mimeType+"\"...");
+			Log.v(TAG, "Searching supported color formats for mime type \"" + mimeType + "\"...");
 
 			// We loop through the encoders, apparently this can take up to a sec (testes on a GS3)
 			for(int j = MediaCodecList.getCodecCount() - 1; j >= 0; j--){
@@ -214,7 +214,7 @@ public class CodecManager {
 			mWidth = width;
 			mHeight = height;
 			mYStride   = (int) Math.ceil(mWidth / 16.0) * 16;
-			mUVStride  = (int) Math.ceil( (mYStride / 2) / 16.0) * 16;
+			mUVStride  = (int) Math.ceil((mYStride / 2) / 16.0) * 16;
 			mYSize     = mYStride * mHeight;
 			mUVSize    = mUVStride * mHeight / 2;
 			bufferSize = mYSize + mUVSize * 2;
@@ -248,7 +248,7 @@ public class CodecManager {
 
 			else if (mOutputColorFormat == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar) {
 				// We need to interleave the U and V channel
-				System.arraycopy(buffer, mYSize, tmp, 0, mUVSize*2); // Y
+				System.arraycopy(buffer, mYSize, tmp, 0, mUVSize * 2); // Y
 				for (i = 0; i < mUVSize; i++) {
 					buffer[mYSize + i*2] = tmp[i + mUVSize]; // Cb (U)
 					buffer[mYSize + i*2+1] = tmp[i]; // Cr (V)

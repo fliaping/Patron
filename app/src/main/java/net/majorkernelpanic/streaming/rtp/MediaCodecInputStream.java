@@ -20,15 +20,15 @@
 
 package net.majorkernelpanic.streaming.rtp;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-
 import android.annotation.SuppressLint;
 import android.media.MediaCodec;
 import android.media.MediaCodec.BufferInfo;
 import android.media.MediaFormat;
 import android.util.Log;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 /**
  * An InputStream that uses data from a MediaCodec.
@@ -38,7 +38,7 @@ import android.util.Log;
 @SuppressLint("NewApi")
 public class MediaCodecInputStream extends InputStream {
 
-	public final String TAG = "MediaCodecInputStream"; 
+	public final String TAG = "MediaCodecInputStream";
 
 	private MediaCodec mMediaCodec = null;
 	private BufferInfo mBufferInfo = new BufferInfo();
@@ -81,12 +81,12 @@ public class MediaCodecInputStream extends InputStream {
 						mBuffers = mMediaCodec.getOutputBuffers();
 					} else if (mIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
 						mMediaFormat = mMediaCodec.getOutputFormat();
-						Log.i(TAG,mMediaFormat.toString());
+						Log.i(TAG, mMediaFormat.toString());
 					} else if (mIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
-						Log.v(TAG,"No buffer available...");
+						Log.v(TAG, "No buffer available...");
 						//return 0;
 					} else {
-						Log.e(TAG,"Message: "+mIndex);
+						Log.e(TAG, "Message: " + mIndex);
 						//return 0;
 					}
 				}			

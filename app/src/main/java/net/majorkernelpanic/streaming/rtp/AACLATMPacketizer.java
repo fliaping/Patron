@@ -20,12 +20,11 @@
 
 package net.majorkernelpanic.streaming.rtp;
 
-import java.io.IOException;
-
 import android.annotation.SuppressLint;
 import android.media.MediaCodec.BufferInfo;
-import android.os.SystemClock;
 import android.util.Log;
+
+import java.io.IOException;
 
 /**
  * RFC 3640.  
@@ -74,7 +73,7 @@ public class AACLATMPacketizer extends AbstractPacketizer implements Runnable {
 	@SuppressLint("NewApi")
 	public void run() {
 
-		Log.d(TAG,"AAC LATM packetizer started !");
+		Log.d(TAG, "AAC LATM packetizer started !");
 
 		int length = 0;
 		long oldts;
@@ -124,11 +123,11 @@ public class AACLATMPacketizer extends AbstractPacketizer implements Runnable {
 			}
 		} catch (IOException e) {
 		} catch (ArrayIndexOutOfBoundsException e) {
-			Log.e(TAG,"ArrayIndexOutOfBoundsException: "+(e.getMessage()!=null?e.getMessage():"unknown error"));
+			Log.e(TAG, "ArrayIndexOutOfBoundsException: " + (e.getMessage() != null ? e.getMessage() : "unknown error"));
 			e.printStackTrace();
 		} catch (InterruptedException ignore) {}
 
-		Log.d(TAG,"AAC LATM packetizer stopped !");
+		Log.d(TAG, "AAC LATM packetizer stopped !");
 
 	}
 

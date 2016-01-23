@@ -57,7 +57,7 @@ public interface Stream {
 	 * Sets the destination ip address of the stream.
 	 * @param dest The destination address of the stream 
 	 */
-	public void setDestinationAddress(InetAddress dest);	
+	public void setDestinationAddress(InetAddress dest);
 	
 	/** 
 	 * Sets the destination ports of the stream.

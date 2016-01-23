@@ -20,6 +20,11 @@
 
 package net.majorkernelpanic.streaming.rtp;
 
+import android.os.SystemClock;
+import android.util.Log;
+
+import net.majorkernelpanic.streaming.rtcp.SenderReport;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
@@ -27,10 +32,6 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
-import net.majorkernelpanic.streaming.rtcp.SenderReport;
-import android.os.SystemClock;
-import android.util.Log;
 
 /**
  * A basic implementation of an RTP socket.
@@ -102,7 +103,7 @@ public class RtpSocket implements Runnable {
 			/*									 | |---------------------								*/
 			/*									 | ||  -----------------------> Source Identifier(0)	*/
 			/*									 | ||  |												*/
-			mBuffers[i][0] = (byte) Integer.parseInt("10000000",2);
+			mBuffers[i][0] = (byte) Integer.parseInt("10000000", 2);
 
 			/* Payload Type */
 			mBuffers[i][1] = (byte) 96;
@@ -208,7 +209,7 @@ public class RtpSocket implements Runnable {
 	/** 
 	 * Returns an available buffer from the FIFO, it can then be modified. 
 	 * Call {@link #commitBuffer(int)} to send it over the network. 
-	 * @throws InterruptedException 
+	 * @throws InterruptedException
 	 **/
 	public byte[] requestBuffer() throws InterruptedException {
 		mBufferRequested.acquire();
@@ -278,7 +279,7 @@ public class RtpSocket implements Runnable {
 			// Caches mCacheSize milliseconds of the stream in the FIFO.
 			Thread.sleep(mCacheSize);
 			long delta = 0;
-			while (mBufferCommitted.tryAcquire(4,TimeUnit.SECONDS)) {
+			while (mBufferCommitted.tryAcquire(4, TimeUnit.SECONDS)) {
 				if (mOldTimestamp != 0) {
 					// We use our knowledge of the clock rate of the stream and the difference between two timestamps to
 					// compute the time lapse that the packet represents.
@@ -289,7 +290,7 @@ public class RtpSocket implements Runnable {
 						// We ensure that packets are sent at a constant and suitable rate no matter how the RtpSocket is used.
 						if (mCacheSize>0) Thread.sleep(d);
 					} else if ((mTimestamps[mBufferOut]-mOldTimestamp)<0) {
-						Log.e(TAG, "TS: "+mTimestamps[mBufferOut]+" OLD: "+mOldTimestamp);
+						Log.e(TAG, "TS: " + mTimestamps[mBufferOut] + " OLD: " + mOldTimestamp);
 					}
 					delta += mTimestamps[mBufferOut]-mOldTimestamp;
 					if (delta>500000000 || delta<0) {
@@ -319,7 +320,7 @@ public class RtpSocket implements Runnable {
 	private void sendTCP() {
 		synchronized (mOutputStream) {
 			int len = mPackets[mBufferOut].getLength();
-			Log.d(TAG,"sent "+len);
+			Log.d(TAG, "sent " + len);
 			mTcpHeader[2] = (byte) (len>>8);
 			mTcpHeader[3] = (byte) (len&0xFF);
 			try {

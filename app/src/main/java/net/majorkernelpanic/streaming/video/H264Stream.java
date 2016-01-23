@@ -20,17 +20,6 @@
 
 package net.majorkernelpanic.streaming.video;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
-import net.majorkernelpanic.streaming.SessionBuilder;
-import net.majorkernelpanic.streaming.exceptions.ConfNotSupportedException;
-import net.majorkernelpanic.streaming.exceptions.StorageUnavailableException;
-import net.majorkernelpanic.streaming.hw.EncoderDebugger;
-import net.majorkernelpanic.streaming.mp4.MP4Config;
-import net.majorkernelpanic.streaming.rtp.H264Packetizer;
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences.Editor;
 import android.graphics.ImageFormat;
@@ -40,6 +29,18 @@ import android.os.Environment;
 import android.service.textservice.SpellCheckerService.Session;
 import android.util.Base64;
 import android.util.Log;
+
+import net.majorkernelpanic.streaming.SessionBuilder;
+import net.majorkernelpanic.streaming.exceptions.ConfNotSupportedException;
+import net.majorkernelpanic.streaming.exceptions.StorageUnavailableException;
+import net.majorkernelpanic.streaming.hw.EncoderDebugger;
+import net.majorkernelpanic.streaming.mp4.MP4Config;
+import net.majorkernelpanic.streaming.rtp.H264Packetizer;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A class for streaming H.264 from the camera of an android device using RTP.
@@ -81,7 +82,7 @@ public class H264Stream extends VideoStream {
 	 */
 	public synchronized String getSessionDescription() throws IllegalStateException {
 		if (mConfig == null) throw new IllegalStateException("You need to call configure() first !");
-		return "m=video "+String.valueOf(getDestinationPorts()[0])+" RTP/AVP 96\r\n" +
+		return "m=video "+ String.valueOf(getDestinationPorts()[0])+" RTP/AVP 96\r\n" +
 		"a=rtpmap:96 H264/90000\r\n" +
 		"a=fmtp:96 packetization-mode=1;profile-level-id="+mConfig.getProfileLevel()+";sprop-parameter-sets="+mConfig.getB64SPS()+","+mConfig.getB64PPS()+";\r\n";
 	}	
@@ -133,7 +134,7 @@ public class H264Stream extends VideoStream {
 			return new MP4Config(debugger.getB64SPS(), debugger.getB64PPS());
 		} catch (Exception e) {
 			// Fallback on the old streaming method using the MediaRecorder API
-			Log.e(TAG,"Resolution not supported with the MediaCodec API, we fallback on the old streamign method.");
+			Log.e(TAG, "Resolution not supported with the MediaCodec API, we fallback on the old streamign method.");
 			mMode = MODE_MEDIARECORDER_API;
 			return testH264();
 		}
@@ -156,7 +157,7 @@ public class H264Stream extends VideoStream {
 
 		final String TESTFILE = Environment.getExternalStorageDirectory().getPath()+"/spydroid-test.mp4";
 		
-		Log.i(TAG,"Testing H264 support... Test file saved at: "+TESTFILE);
+		Log.i(TAG, "Testing H264 support... Test file saved at: " + TESTFILE);
 
 		try {
 			File file = new File(TESTFILE);
@@ -209,15 +210,15 @@ public class H264Stream extends VideoStream {
 			// We wait a little and stop recording
 			mMediaRecorder.setOnInfoListener(new MediaRecorder.OnInfoListener() {
 				public void onInfo(MediaRecorder mr, int what, int extra) {
-					Log.d(TAG,"MediaRecorder callback called !");
-					if (what==MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
-						Log.d(TAG,"MediaRecorder: MAX_DURATION_REACHED");
-					} else if (what==MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
-						Log.d(TAG,"MediaRecorder: MAX_FILESIZE_REACHED");
-					} else if (what==MediaRecorder.MEDIA_RECORDER_INFO_UNKNOWN) {
-						Log.d(TAG,"MediaRecorder: INFO_UNKNOWN");
+					Log.d(TAG, "MediaRecorder callback called !");
+					if (what== MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
+						Log.d(TAG, "MediaRecorder: MAX_DURATION_REACHED");
+					} else if (what== MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED) {
+						Log.d(TAG, "MediaRecorder: MAX_FILESIZE_REACHED");
+					} else if (what== MediaRecorder.MEDIA_RECORDER_INFO_UNKNOWN) {
+						Log.d(TAG, "MediaRecorder: INFO_UNKNOWN");
 					} else {
-						Log.d(TAG,"WTF ?");
+						Log.d(TAG, "WTF ?");
 					}
 					mLock.release();
 				}
@@ -227,11 +228,11 @@ public class H264Stream extends VideoStream {
 			mMediaRecorder.prepare();
 			mMediaRecorder.start();
 
-			if (mLock.tryAcquire(6,TimeUnit.SECONDS)) {
-				Log.d(TAG,"MediaRecorder callback was called :)");
+			if (mLock.tryAcquire(6, TimeUnit.SECONDS)) {
+				Log.d(TAG, "MediaRecorder callback was called :)");
 				Thread.sleep(400);
 			} else {
-				Log.d(TAG,"MediaRecorder callback was not called after 6 seconds... :(");
+				Log.d(TAG, "MediaRecorder callback was not called after 6 seconds... :(");
 			}
 		} catch (IOException e) {
 			throw new ConfNotSupportedException(e.getMessage());
@@ -262,9 +263,9 @@ public class H264Stream extends VideoStream {
 
 		// Delete dummy video
 		File file = new File(TESTFILE);
-		if (!file.delete()) Log.e(TAG,"Temp file could not be erased");
+		if (!file.delete()) Log.e(TAG, "Temp file could not be erased");
 
-		Log.i(TAG,"H264 Test succeded...");
+		Log.i(TAG, "H264 Test succeded...");
 
 		// Save test result
 		if (mSettings != null) {
