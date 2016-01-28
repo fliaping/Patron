@@ -24,6 +24,8 @@ import net.majorkernelpanic.streaming.SessionBuilder;
 import net.majorkernelpanic.streaming.gl2cameraeye.VideoPreview;
 import net.majorkernelpanic.streaming.video.VideoQuality;
 
+import java.util.PriorityQueue;
+
 public class RecordService extends Service {
     public final String TAG = "RecordService";
     private MediaFileDAOImpl mfImpl;
@@ -36,6 +38,23 @@ public class RecordService extends Service {
     private WindowManager mWindowManager;
     private WindowManager.LayoutParams mRecorderViewParams;
     private PatronServer mPatronServer;
+    private RecordManager recordManager;
+    private VideoPreview.VideoCallback videoCallback=new VideoPreview.VideoCallback() {
+        @Override
+        public void onCaptured(String path) {
+            storageManager.addToDB(path);
+        }
+
+        @Override
+        public void onShortVideoFinished(String path) {
+            storageManager.addToDB(path);
+        }
+
+        @Override
+        public void onVideoFinished(String path, int type) {
+
+        }
+    };
 
 
     @Override
@@ -50,6 +69,7 @@ public class RecordService extends Service {
         storageManager = StorageManager.getInstance(this);  //存储管理对象
         storageManager.start();   //启动存储线程
         mfImpl = new MediaFileDAOImpl(this);  //数据库实现类
+        recordManager = new RecordManager(this);
         new Command(this);  //指令相应类注册
 
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
@@ -68,31 +88,20 @@ public class RecordService extends Service {
         registTestBroadcast();
         mVideoCapture = VideoPreview.createVideoPreview(this, mCameraId, 0);
 
-        //createContextAndStartCamera(0);
+        createContextAndStartCamera(0);
 
         SessionBuilder.getInstance()
                 .setContext(this)
                 .setAudioEncoder(SessionBuilder.AUDIO_NONE)
                 .setVideoEncoder(SessionBuilder.VIDEO_H264)
-                .setVideoQuality(new VideoQuality(640,80,30,(1280*720)<<3));
+                .setVideoQuality(new VideoQuality(640,80,30,(640*480)<<3));
         mPatronServer = new PatronServer(this);
         //mPatronServer.setTest();
-        mPatronServer.onCreate();
+        //mPatronServer.onCreate();
     }
 
     public void open(){
-        if(!mVideoCapture.isRecording()){
-            try {
-                mVideoCapture.setOutputFile(getStoreFileName());
-                mVideoCapture.startRecord();
-                //mVideoCapture.startShortVideo();
-            } catch (Throwable e) {
-                Log.e(TAG, e.getMessage(), e);
-            }
-        }else{
-            mVideoCapture.stopRecord();
-            //mVideoCapture.stopShortVideo();
-        }
+
     }
     private String getStoreFileName() {
         return Config.NORMAL_VIDEO_PATH + "NORMAL_" +System.currentTimeMillis() + ".mp4";
@@ -130,26 +139,41 @@ public class RecordService extends Service {
     }
 
 
-    public void lockFiles(int[] ids){
+    public void lockFiles(int[] ids, Intent intent){
         if(ids.length > 0 && mfImpl !=null){
             for(int i = 0;i<ids.length;i++){
                 mfImpl.lockFileImpl(ids[i]);
             }
-        }
-    }
-
-    public void unlockFiles(int[] ids){
-        if(ids.length > 0 && mfImpl !=null){
-            for(int i = 0;i<ids.length;i++){
-                mfImpl.unlockFileImpl(ids[i]);
+            if(intent != null){
+                Intent i = new Intent(Config.RETURN_BROADCAST);
+                i.putExtra("session",intent.getStringExtra("session"));
+                sendBroadcast(i);
             }
         }
     }
 
-    public void deleteFiles(int[] ids){
+    public void unlockFiles(int[] ids, Intent intent){
+        if(ids.length > 0 && mfImpl !=null){
+            for(int i = 0;i<ids.length;i++){
+                mfImpl.unlockFileImpl(ids[i]);
+            }
+            if(intent != null){
+                Intent i = new Intent(Config.RETURN_BROADCAST);
+                i.putExtra("session",intent.getStringExtra("session"));
+                sendBroadcast(i);
+            }
+        }
+    }
+
+    public void deleteFiles(int[] ids, Intent intent){
         if(ids.length > 0 && mfImpl !=null){
             for(int i = 0;i<ids.length;i++){
                 mfImpl.deleteFileImpl(ids[i]);
+            }
+            if(intent != null){
+                Intent i = new Intent(Config.RETURN_BROADCAST);
+                i.putExtra("session",intent.getStringExtra("session"));
+                sendBroadcast(i);
             }
         }
     }
@@ -171,6 +195,43 @@ public class RecordService extends Service {
         registerReceiver(new TestBroadcast(), intentFilter);
     }
     private boolean isShow = true;
+
+    public void startRecord() {
+        recordManager.startRecord();
+    }
+
+    public void stopRecord() {
+        recordManager.stopRecord();
+    }
+
+    public void capturePicture() {
+        if(mVideoCapture!=null)
+            mVideoCapture.capturePicture();
+    }
+
+    public void voiceOn() {
+        mVideoCapture.setAudio_record(true);
+    }
+
+    public void voiceOff() {
+        mVideoCapture.setAudio_record(false);
+    }
+
+    public void loopRecordOn() {
+
+    }
+
+    public void loopRecordOff() {
+
+    }
+
+    public void lockCurrentVideo() {
+        mVideoCapture.lockCurrentVideo(true);
+    }
+
+    public void unlockCurrentVideo() {
+        mVideoCapture.lockCurrentVideo(false);
+    }
 
     class TestBroadcast extends BroadcastReceiver{
 

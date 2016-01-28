@@ -460,6 +460,7 @@ public class Session {
 		Stream stream = id==0 ? mAudioStream : mVideoStream;
 		if (stream!=null && !stream.isStreaming()) {
 			try {
+				Log.e(TAG,"-----  mVideoStream begin");
 				InetAddress destination =  InetAddress.getByName(mDestination);
 				stream.setTimeToLive(mTimeToLive);
 				stream.setDestinationAddress(destination);

@@ -22,6 +22,7 @@ public class MediaMuxerWrapper {
 	private TrackInfo mVideoTrack;
 	private TrackInfo mAudioTrack;
 
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 	public static MediaMuxerWrapper create(String savefile) throws Exception {
 		MediaMuxer muxer = new MediaMuxer(savefile, OutputFormat.MUXER_OUTPUT_MPEG_4);
 		return new MediaMuxerWrapper(muxer);
@@ -64,6 +65,7 @@ public class MediaMuxerWrapper {
 		return this.mStarted;
 	}
 
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 	public void stop() {
 		try {
 			if (this.mVideoTrack != null) {
@@ -85,6 +87,7 @@ public class MediaMuxerWrapper {
 		}
 	}
 
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 	private synchronized boolean tryStarted() {
 		if (!this.isStarted()) {
 			if (this.mVideoTrack != null && this.mVideoTrack.getTrackIndex() == -1) {
@@ -104,6 +107,7 @@ public class MediaMuxerWrapper {
 
 	/* ===================================================== */
 
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
 	private static MediaCodec createVideoEncoder(int width, int height, int frameRate, int colorFormat) throws IOException {
 		if(colorFormat==-1){
 			colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar;
@@ -125,6 +129,7 @@ public class MediaMuxerWrapper {
 	 * @return
 	 * @throws IOException
 	 */
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
 	private static MediaCodec createAudioEncoder() throws IOException {
 		//TODO: 参数可外部输入
 		MediaFormat mediaFormat = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_AAC, 44100, 2);
@@ -228,6 +233,7 @@ public class MediaMuxerWrapper {
 	private long mNextVideoTime = System.currentTimeMillis(); // 第一帧,启动编码器
 	private long mNextAudioTime = 0;
 
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 	private void write(TrackInfo track, ByteBuffer buffer, MediaCodec.BufferInfo bufferInfo) {
 		if (track == this.mVideoTrack) {
 			bufferInfo.presentationTimeUs = (System.currentTimeMillis() - mNextVideoTime) * 1000;
@@ -264,10 +270,12 @@ public class MediaMuxerWrapper {
 			return mTrackIdx;
 		}
 
+		@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 		public void addTrack(MediaFormat format) {
 			this.mTrackIdx = this.mMuxer.getMediaMuxer().addTrack(format);
 		}
 
+		@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
 		public void start() {
 			if (this.mCodec != null) {
 				this.mCodec.start();
@@ -279,6 +287,7 @@ public class MediaMuxerWrapper {
 			return mStarted;
 		}
 
+		@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
 		public void stop() {
 			if (this.mCodec != null) {
 				this.mCodec.stop();

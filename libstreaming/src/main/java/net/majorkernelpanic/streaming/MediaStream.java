@@ -274,6 +274,7 @@ public abstract class MediaStream implements Stream {
 	
 	/** Starts the stream. */
 	public synchronized void start() throws IllegalStateException, IOException {
+		Log.e(TAG,"--------  MediaStream start "+mMode);
 		
 		if (mDestination==null)
 			throw new IllegalStateException("No destination ip address set for the stream !");
@@ -283,12 +284,12 @@ public abstract class MediaStream implements Stream {
 
 		mPacketizer.setTimeToLive(mTTL);
 		
-		if (mMode != MODE_MEDIARECORDER_API) {
-			encodeWithMediaCodec();
-		} else if(mMode != MODE_PATRON_RECORD){
+		if (mMode == MODE_MEDIARECORDER_API) {
+			encodeWithMediaRecorder();
+		} else if(mMode == MODE_PATRON_RECORD){
 			encodeWithPatron();
 		} else {
-			encodeWithMediaRecorder();
+			encodeWithMediaCodec();
 		}
 
 	}

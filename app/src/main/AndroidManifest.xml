@@ -44,6 +44,21 @@
             android:authorities="com.deepwits.Patron.StorageManager"
             android:enabled="true"
             android:exported="true" />
+        <receiver android:name="com.deepwits.Patron.DetecteEvent.DetectReceiver" >
+            <intent-filter>
+                <action android:name="com.deepwits.patron.start_car" />
+                <action android:name="com.deepwits.patron.stop_car" />
+                <action android:name="com.deepwits.patron.settingchange" />
+            </intent-filter>
+        </receiver>
+        <service android:name="com.deepwits.Patron.DetecteEvent.ColiisionService" >
+        </service>
+        <service android:name="com.deepwits.Patron.DetecteEvent.ParkDetectService" >
+        </service>
+        <provider
+            android:name="com.deepwits.Patron.DetecteEvent.DetecteContentProvider"
+            android:authorities="com.deepwits.patron.detect"
+            android:exported="true" />
     </application>
 
 </manifest>

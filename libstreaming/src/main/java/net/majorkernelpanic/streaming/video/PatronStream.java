@@ -59,7 +59,8 @@ public class PatronStream extends VideoStream {
      */
     public synchronized void start() throws IllegalStateException, IOException {
         if (!mStreaming) {
-            configure();
+            Log.e(TAG,"--------  PatronStream start");
+            //configure();
             byte[] pps = Base64.decode(mConfig.getB64PPS(), Base64.NO_WRAP);
             byte[] sps = Base64.decode(mConfig.getB64SPS(), Base64.NO_WRAP);
             ((H264Packetizer)mPacketizer).setStreamParameters(pps, sps);
@@ -95,12 +96,15 @@ public class PatronStream extends VideoStream {
      * and determines the pps and sps. Should not be called by the UI thread.
      **/
     private MP4Config testH264() throws IllegalStateException, IOException {
+        Log.e(TAG,"testH264   "+(mMode & 0xFF));
+        mMode = MODE_PATRON_RECORD;
         if (mMode == MODE_MEDIARECORDER_API) return testMediaRecorderAPI();
         else if(mMode == MODE_PATRON_RECORD ) return testPatronAPI();
         else return testMediaCodecAPI();
     }
 
     private MP4Config testPatronAPI() throws RuntimeException, IOException {
+        Log.e(TAG,"--------    testPatronAPI");
         return new MP4Config("J0LgHo1oCgPabIAAAAMAgAAACgeKEVA=","KM4ESSA=");
     }
     @SuppressLint("NewApi")
@@ -267,14 +271,21 @@ public class PatronStream extends VideoStream {
 
     private long oldnow = 0;
     private long now  = 0;
-    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+    private final static Object SYNC = new Object();
+
+
+    int count = 0;
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public void writeVideoSampleData(byte[] data) {
-        Log.e(TAG,"PatronStream get a frame data:"+data.length);
+        if(mMediaCodec == null) return;
+        Log.e(TAG,"PatronStream get a frame data:"+data.length +" count: "+ count);
+
         now = System.nanoTime() / 1000;
         oldnow = now;
 
         int bufferIndex = mMediaCodec.dequeueInputBuffer(500000);
         if (bufferIndex >= 0) {
+            count++;
             patronInputBuffers[bufferIndex].clear();
             ByteBuffer buffer = patronInputBuffers[bufferIndex];
             if (data == null)
@@ -287,6 +298,16 @@ public class PatronStream extends VideoStream {
         } else {
             Log.e(TAG, "No buffer available !");
         }
+
+        /*synchronized (SYNC) {
+            int inputBufferIndex = mMediaCodec.dequeueInputBuffer(100);
+            if (inputBufferIndex >= 0) {
+                ByteBuffer inputBuffer = mMediaCodec.getInputBuffer(inputBufferIndex);
+                inputBuffer.clear();
+                inputBuffer.put(data);
+                mMediaCodec.queueInputBuffer(inputBufferIndex, 0, data.length, 0, 0);
+            }
+        }*/
 
     }
 

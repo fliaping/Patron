@@ -107,7 +107,7 @@ public class PatronServer{
 	public PatronServer(RecordService service) {
 		this.mRecordService = service;
 		mVideoPreview = service.getVideoPreview();
-		//onCreate();
+		onCreate();
 	}
 
 	/** Be careful: those callbacks won't necessarily be called from the ui thread ! */
@@ -510,7 +510,10 @@ public class PatronServer{
 
 				trackId = Integer.parseInt(m.group(1));
 
+				Log.e(TAG,"-------  trackId;"+trackId);
+
 				if (!mSession.trackExists(trackId)) {
+					Log.e(TAG,"--------  track  isn't Exists ");
 					response.status = Response.STATUS_NOT_FOUND;
 					return response;
 				}
@@ -531,6 +534,8 @@ public class PatronServer{
 				ssrc = mSession.getTrack(trackId).getSSRC();
 				src = mSession.getTrack(trackId).getLocalPorts();
 				destination = mSession.getDestination();
+
+				Log.e(TAG,"-------- session destination "+destination);
 
 				mSession.getTrack(trackId).setDestinationPorts(p1, p2);
 				

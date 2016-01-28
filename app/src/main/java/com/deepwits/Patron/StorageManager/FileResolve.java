@@ -9,10 +9,10 @@ import android.util.Log;
 
 import com.deepwits.Patron.Config;
 
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 
 /**
  * Created by Payne on 1/13/16.

@@ -1,4 +1,4 @@
-package com.deepwits.Patron;
+package net.majorkernelpanic.streaming;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -44,6 +45,7 @@ public class Config {
     private Config(){
 
     }
+
     public static boolean ok(Context context) throws Exception {
         Config.context = context;
         if(Config.context == null){

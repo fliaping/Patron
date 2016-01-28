@@ -4,6 +4,7 @@ package net.majorkernelpanic.streaming.gl2cameraeye;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
@@ -23,14 +24,20 @@ import android.view.WindowManager;
 //import org.chromium.base.JNINamespace;
 
 
+import net.majorkernelpanic.streaming.Session;
 import net.majorkernelpanic.streaming.Setting;
 import net.majorkernelpanic.streaming.rtp.H264Packetizer;
 import net.majorkernelpanic.streaming.rtp.MediaCodecInputStream;
 import net.majorkernelpanic.streaming.video.PatronStream;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.locks.ReentrantLock;
 
 //@JNINamespace("media")
@@ -43,6 +50,11 @@ public class VideoPreview implements PreviewCallback, VideoGLRender.OnFrameListe
     private boolean stream_on = true;
     private boolean shortVideo_on = false;
     private SharedPreferences mSharedPreferences = null;
+    private boolean capture_picture = false;
+    private int videoType;
+    private boolean audio_record;
+
+
     //getSharedPreferences(Config.SETTING_SP_NAME, context.MODE_PRIVATE);
 
     static class CaptureFormat {
@@ -276,7 +288,7 @@ public class VideoPreview implements PreviewCallback, VideoGLRender.OnFrameListe
 
         isEncoder = true;
 
-        muxer = MediaMuxerWrapper.create("/sdcard/rec/xp_"+System.currentTimeMillis()+".mp4");//创建MediaMuxer
+        muxer = MediaMuxerWrapper.create("/sdcard/src/"+System.currentTimeMillis()+".mp4");//创建MediaMuxer
         muxer.addVideoTrack(320,240,20, MediaCodecInfo.CodecCapabilities.COLOR_Format24bitBGR888);
         muxer.start();
 
@@ -303,6 +315,19 @@ public class VideoPreview implements PreviewCallback, VideoGLRender.OnFrameListe
         Log.e(TAG, "Encoder startShortVideo success !! " + "isEncoder" + isEncoder + "Output Path :");
         return "ok";
 
+    }
+
+    public void capturePicture() {
+        capture_picture = true;
+    }
+
+    public void lockCurrentVideo(boolean lock){
+        if(lock) videoType = 2;
+        else videoType = 1;
+    }
+    public void setAudio_record(boolean on){
+        if (on) audio_record = true;
+        else audio_record = false;
     }
 
     // Returns true on success, false otherwise.
@@ -562,22 +587,52 @@ public class VideoPreview implements PreviewCallback, VideoGLRender.OnFrameListe
         byte [] buf = null;
         if(stream_on || shortVideo_on){
             buf = ColorConvert.rgbaToargb(data, data_size);  //颜色转换
+
             try {
                 counter++;
+                if(stream_on){
+                    //启动RTSP流
+                    if(patronStream != null){
+                        patronStream.writeVideoSampleData(buf);
+                    }
+                }
+                if(shortVideo_on){
+                        //启动小视频
+                    if(mMuxer==null){
+                        final String path = "/sdcard/rec/c_"+System.currentTimeMillis()+".mp4";
+                        mMuxer =  MediaMuxerWrapper.create(path);
+                        mMuxer.addVideoTrack(640, 480, 30, MediaCodecInfo.CodecCapabilities.COLOR_Format24bitRGB888);
+                        mMuxer.start();
+                        Timer timer = new Timer();
+                        TimerTask timerTask = new TimerTask() {
+                            @Override
+                            public void run() {
+                                mMuxer.stop();
+                                if(videoCallback != null){
+                                    videoCallback.onShortVideoFinished(path);
+                                }
+                            }
+                        };
+                        timer.schedule(timerTask,30*1000);
+                    }else {
+                        this.mMuxer.writeVideoSample(buf);
+                    }
+                }
+
+                if(capture_picture){
+                    Bitmap bitmap = MyBitmapFactory.createMyBitmap(buf,640,480);
+                    File pictureFile = new File("/sdcard/rec/PIC_"+System.currentTimeMillis()+".jpg");
+                    OutputStream outputStream = new FileOutputStream(pictureFile);
+                    bitmap.compress(Bitmap.CompressFormat.JPEG,90,outputStream);
+                    if(videoCallback != null){
+                        videoCallback.onCaptured(pictureFile.getPath());
+                    }
+
+                }
 
                 //Log.e(TAG, ""+System.currentTimeMillis()+"  frame: " + counter +"  size:"+data_size+"  data.length:"+data.length);
-                /*//启动小视频
-                if(mMuxer==null){
-                    mMuxer =  MediaMuxerWrapper.create("/sdcard/rec/c_"+System.currentTimeMillis()+".mp4");
-                    mMuxer.addVideoTrack(640, 480, 30, MediaCodecInfo.CodecCapabilities.COLOR_Format24bitRGB888);
-                    mMuxer.start();
-                }else {
-                    this.mMuxer.writeVideoSample(buf);
-                }*/
-                //启动RTSP流
-                if(patronStream != null){
-                    patronStream.writeVideoSampleData(buf);
-                }
+
+
             } catch (Exception e) {
                 Log.e(TAG, e.getMessage(), e);
             } finally {
@@ -649,10 +704,16 @@ public class VideoPreview implements PreviewCallback, VideoGLRender.OnFrameListe
 		}
 		/* ================== */
 		this.mRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-		this.mRecorder.setAudioSource(MediaRecorder.VideoSource.CAMERA);
+        if(audio_record){
+            this.mRecorder.setAudioSource(MediaRecorder.VideoSource.CAMERA);
+        }
 		this.mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
 		this.mRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-		this.mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB);
+        if(audio_record){
+            this.mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB);
+        }
+
+
 		this.mRecorder.setVideoEncodingBitRate(8000000);
 		this.mRecorder.setVideoSize(VIDEO_WIDTH, VIDEO_HEIGHT);
 		this.mRecorder.setVideoFrameRate(30);
@@ -669,7 +730,39 @@ public class VideoPreview implements PreviewCallback, VideoGLRender.OnFrameListe
     		mRecorder.stop();
     		mRecorder.release();
     		mRecorder = null;
+            if(videoCallback != null){
+                videoCallback.onVideoFinished(mOutputFile,videoType);
+            }
     	}
     	recording = false;
+    }
+
+
+    private VideoCallback videoCallback;
+    public void setVideoCallback(VideoCallback videoCallback){
+        this.videoCallback = videoCallback;
+    }
+
+    public interface VideoCallback{
+        /**
+         * 图片拍摄完成回调
+         * @param path 图片路径
+         */
+        public void onCaptured(String path);
+
+        /**
+         * 小视频录制成功
+         * @param path 小视频路径
+         */
+        public void onShortVideoFinished(String path);
+
+        /**
+         * 小视频录制成功
+         * @param path  视频路径
+         * @param type  视频类型,1为正常,2为锁定
+         */
+        public void onVideoFinished(String path,int type);
+
+
     }
 }

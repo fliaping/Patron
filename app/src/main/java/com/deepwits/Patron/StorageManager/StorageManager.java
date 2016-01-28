@@ -9,8 +9,8 @@ import com.deepwits.Patron.DataBase.MediaFileDAOImpl;
 import com.deepwits.Patron.Config;
 import com.deepwits.Patron.Recorder.RecordService;
 
+
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -77,6 +77,9 @@ public class StorageManager extends Thread {
     public void addToDB(String path) {  //添加文件到数据库
         mHandler.post(new AddRunnable(path));
     }
+    public void addToDB(String path,int videoType) {  //添加文件到数据库
+        mHandler.post(new AddRunnable(path));
+    }
 
     /**
      * 检查剩余空间,如果剩余空间不足,等待删除文件后再启动
@@ -111,15 +114,30 @@ public class StorageManager extends Thread {
         }
     };
 
-    private class AddRunnable implements Runnable {  //数据库写入异步方法
-        private String path;
+    private class AddRunnable implements Runnable {
+        private int videpType = 0;  //数据库写入异步方法
+        private String path = null;
 
         public AddRunnable(String path) {
             this.path = path;
         }
+        public AddRunnable(String path,int videoType) {
+            this.path = path;
+            this.videpType = videoType;
+        }
         @Override
         public void run() {
             if (path == null) return;
+            if(videpType == MediaFile.EventType.LOCKED.get()){
+                File file = new File(path);
+                if(file.exists()){
+                    String lockDir = Config.LOCK_VIDEO_PATH+file.lastModified();
+                    File lockPath = new File(lockDir);
+                    if(!lockPath.exists()) lockPath.mkdirs();
+                    File newFile = new File(lockPath+"/"+file.getName());
+                    file.renameTo(newFile);
+                }
+            }
             MediaFile mediaFile = new MediaFile(path);
             fileResolve.resolve(mediaFile);
             mfImpl.add(mediaFile);

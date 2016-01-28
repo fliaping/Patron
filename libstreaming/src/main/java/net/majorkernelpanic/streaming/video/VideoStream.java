@@ -548,7 +548,7 @@ public abstract class VideoStream extends MediaStream {
 		Log.e(TAG,"Video encoded using the Patron API");
 
 		int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_Format24bitRGB888;
-		int width = 1280,height = 720;
+		int width = 640,height = 480;
 		MediaFormat mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height);
 		mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat/*MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar*/);
 		mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, (width * height) << 3);

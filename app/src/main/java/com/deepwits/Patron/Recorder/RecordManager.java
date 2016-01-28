@@ -6,6 +6,7 @@ import android.util.Log;
 import com.deepwits.Patron.Config;
 import com.deepwits.Patron.StorageManager.StorageManager;
 import com.deepwits.Patron.StorageManager.StorageUtil;
+
 import net.majorkernelpanic.streaming.gl2cameraeye.VideoPreview;
 
 import net.majorkernelpanic.streaming.video.VideoStream;
@@ -21,6 +22,8 @@ public class RecordManager extends VideoStream{
     private boolean isLockCurrentVideo = false;
 
     private VideoPreview mVideoCapture;
+    private boolean isRecord  = false;
+    private boolean isLoopRecord = true;
 
     public RecordManager(RecordService service) {
         this.mRecordService = service;
@@ -45,14 +48,23 @@ public class RecordManager extends VideoStream{
         timedSaveTask = new MyTimerTask(mHandler, Config.getDefaultI(Config.VIDEO_DUR), 0) {   //定义定时保存函数
             @Override
             public void timerTask() {
-                if (Config.IS_VID_REC_DE) {   //正在录像时，停止录像保存文件后再重启
-                    isTimedStop = true; //停止后自动重启
-                    stopRecord();
+                if (isRecord) {   //正在录像时，停止录像保存文件后再重启
+                    if(isLoopRecord){  //若是循环录制,循环录制时停止后重启
+                        isTimedStop = true; //停止后自动重启
+                        mStopRecord();
+                    }else {
+                        isTimedStop = false;
+                    }
+
                 }
             }
         };
         Log.d(TAG, "initRecord  success .......");
         return false;
+    }
+
+    public void loopRecord(boolean isLoopRecord){
+        this.isLoopRecord = isLoopRecord;
     }
 
     public synchronized boolean startRecord() {
@@ -77,16 +89,22 @@ public class RecordManager extends VideoStream{
             return true;
         } else return false;
     }
+    public void stopRecord(){
+        isTimedStop = false;
+        mStopRecord();
+    }
 
-    private synchronized boolean stopRecord() {
-        videoPreview.stopRecord();
-        if (isTimedStop) {
-            startRecord();
-        } else {
-            isTimedStop = false;   //不是定时停止，为手动停止，录像标志为假
-            timedSaveTask.pause();
+    private synchronized boolean mStopRecord() {
+        if(videoPreview.isRecording()){
+            videoPreview.stopRecord();
+            if (isTimedStop) {
+                startRecord();
+            } else {
+                isTimedStop = false;   //不是定时停止，为手动停止，录像标志为假
+                //timedSaveTask.pause();
+            }
+            Log.d(TAG, "mStopRecord success......");
         }
-        Log.d(TAG, "mStopRecord success......");
         return true;
     }
 

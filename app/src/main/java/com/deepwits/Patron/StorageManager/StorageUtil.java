@@ -1,40 +1,50 @@
 package com.deepwits.Patron.StorageManager;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
 import android.os.Environment;
 import android.os.StatFs;
 import android.util.Log;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by xp on 15-9-23.
  * 存储工具包
  */
-public class StorageUtil {
+public class StorageUtil  {
     private static final String TAG = "StorageUtil";
     public static String getStorageDir() {
         String path = "";
         List<String> pathList= getExtSDCardPaths();
         if(pathList.size()>1){//paths.get(0)肯定是外置SD卡的位置，因为它是primary external storage.
             Log.e(TAG, "*****************pathList.get(0) is " + pathList.get(0));
-            Log.e(TAG, "^_^ ^_^ ^_^ ^_^ pathList.get(1) is " + pathList.get(1));
+            Log.e(TAG, "^_^ ^_^ ^_^ ^_^ ^_^ ^_^ ^_^ ^_^ ^_^pathList.get(1) is " + pathList.get(1));
             path = pathList.get(1); //    /storage/sdcard1
         } else if(pathList.size() == 1) {
             //path = pathList.get(0); //   /storage/sdcard0*/
             return path;
         }
+        //path = pathList.get(0);
         return path;
     }
 
@@ -238,7 +248,7 @@ public class StorageUtil {
         int mIdx = 0;
         if (isForword) {
             while (slashMatcher.find()) {
-                Log.e(TAG, "slashMatcher");
+                Log.e(TAG, "slashMatcher.find()");
                 mIdx++;
                 //当"sub"符号第n次出现的位置
                 if (mIdx == n) {
@@ -321,48 +331,4 @@ public class StorageUtil {
         boolean ret = parentFile.exists();
         return ret;
     }
-    public static String getRandomString(int length) { //length表示生成字符串的长度
-        String base = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-        Random random = new Random();
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < length; i++) {
-            int number = random.nextInt(base.length());
-            sb.append(base.charAt(number));
-        }
-        return sb.toString();
-    }
-
 }
-
-
-  /*  *//**
-     * 该函数获取路径的倒数第 countDown 个字符串,example : "/a/b/c/d",coutDown为1时返回d
-     * @param src 路径字符串
-     * @param countDown 倒数第几个
-     * @return 字符串
-     *//*
-    public  String splitString(String src, int countDown) {
-        if (src != null && countDown > 0) {
-            Pattern p = Pattern.compile("[" + File.separator + "]+");
-            String[] result = p.split(src);
-            int length = result.length;
-            if (countDown > length) return null;
-            return result[length - countDown];
-        } else return null;
-    }
-
-    *//**
-     * 该方法将src 按照 split 分割,返回字符串数组
-     * @param src 路径字符串
-     * @param split 按照该字符串分割
-     * @return 路径字符串数组
-     *//*
-    public String[] splitString(String src, String split) {
-        if (src != null && split != null) {
-            Pattern p = Pattern.compile("[" + split + "]+");
-            String[] result = p.split(src);
-            return result;
-        } else {
-            return null;
-        }
-    }*/

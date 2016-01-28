@@ -54,33 +54,37 @@ public class Command {
             if(action_name == null) return;
             switch (action_name){
                 case "start_record" :
-                    //mRecordService.startRecord();
+                    mRecordService.startRecord();
                     break;
                 case "stop_record" :
-                    //mRecordService.stopRecord();
+                    mRecordService.stopRecord();
                     break;
                 case "capture_picture" :
-                    //mRecordService.capturePicture();
+                    mRecordService.capturePicture();
                     break;
                 case "voice_on" :
-                    //mRecordService.voiceOn();
+                    mRecordService.voiceOn();
                     break;
                 case "voice_off" :
-                    //mRecordService.voiceOff();
+                    mRecordService.voiceOff();
                     break;
                 case "loop_record_on" :
-                    //mRecordService.loopRecordOn();
+                    mRecordService.loopRecordOn();
                     break;
                 case "loop_record_off" :
-                    //mRecordService.loopRecordOff();
+                    mRecordService.loopRecordOff();
                     break;
+                case "lock_current_video":
+                    mRecordService.lockCurrentVideo();
+                case "unlock_current_video":
+                    mRecordService.unlockCurrentVideo();
                 case "lock_file" :
                     String action = intent.getStringExtra("action");
                     int fileIds[] = intent.getIntArrayExtra("file_id");
                     if(action.equalsIgnoreCase("lock")){
-                        mRecordService.lockFiles(fileIds);
+                        mRecordService.lockFiles(fileIds,intent);
                     }else if(action.equalsIgnoreCase("unlock")){
-                        mRecordService.unlockFiles(fileIds);
+                        mRecordService.unlockFiles(fileIds,intent);
                     }else {
                         Log.e(TAG,"未定义指令 lock_file - "+action);
                     }
@@ -88,7 +92,7 @@ public class Command {
                 case "delete_file" :
                     Log.e("MediaFileDAOImpl", "receive delete broadcast");
                     int fileIds_1[] = intent.getIntArrayExtra("file_id");
-                    mRecordService.deleteFiles(fileIds_1);
+                    mRecordService.deleteFiles(fileIds_1,intent);
                     break;
                 default:
                     Log.e(TAG,"未定义广播参数:"+action_name);

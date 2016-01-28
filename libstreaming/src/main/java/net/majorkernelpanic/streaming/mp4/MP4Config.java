@@ -45,6 +45,7 @@ public class MP4Config {
 		mPPS = pps;
 		mSPS = sps;
 		mProfilLevel = MP4Parser.toHexString(Base64.decode(sps, Base64.NO_WRAP),1,3);
+		Log.e(TAG,"--------   MP4Config");
 	}	
 	
 	public MP4Config(byte[] sps, byte[] pps) {
