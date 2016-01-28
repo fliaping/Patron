@@ -1,5 +1,7 @@
 package com.deepwits.Patron.StorageManager;
 
+import android.util.Log;
+
 import java.io.File;
 
 /**
@@ -119,6 +121,9 @@ public class MediaFile {
         return src.substring(0,tmp);
     }
 
+    public void setId(int id){
+        this.id = id;
+    }
     public void setFilename(String filename) {
         if(null == filename){               //参数为空,则根据路径分割出文件名
             this.filename = splitFileName();
@@ -214,5 +219,23 @@ public class MediaFile {
         }else {
             return null;
         }
+    }
+
+    public void print(String TAG){
+        Log.e(TAG,"id: "+this.getId());
+        Log.e(TAG,"filename: "+this.getFilename());
+        Log.e(TAG,"path: "+this.getPath());
+        Log.e(TAG,"size: "+this.getSize());
+        Log.e(TAG,"width: "+this.getWidth());
+        Log.e(TAG,"height: "+this.getHeight());
+        Log.e(TAG,"date: "+this.getDate());
+        Log.e(TAG,"duration: "+this.getDuration());
+        Log.e(TAG,"thumb_path: "+this.getThumbPath());
+        Log.e(TAG,"latitude: "+this.getLatitude());
+        Log.e(TAG,"longitude: "+this.getLongitude());
+        Log.e(TAG,"event_type: "+this.getEventType());
+        Log.e(TAG,"media_type: "+this.getMediaType());
+        Log.e(TAG,"command_origin: "+this.getCommandOrign());
+
     }
 }

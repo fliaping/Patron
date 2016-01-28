@@ -5,7 +5,7 @@ import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import com.deepwits.Patron.DefaultConfig;
+import com.deepwits.Patron.Config;
 
 /**
  * Created by xp on 15-9-23.
@@ -31,7 +31,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
         /**
          *
          */
-        db.execSQL("create table "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME +"(" +
+        db.execSQL("create table "+ Config.DB_MEDIAFILE_TABLE_NAME +"(" +
                 "id                 integer         primary key AUTOINCREMENT," +
                 "filename           varchar(225)    not null," +
                 "path               varchar(225)    not null," +

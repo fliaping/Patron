@@ -7,13 +7,12 @@ import android.media.ThumbnailUtils;
 import android.provider.MediaStore;
 import android.util.Log;
 
-import com.deepwits.Patron.DefaultConfig;
+import com.deepwits.Patron.Config;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Random;
 
 /**
  * Created by Payne on 1/13/16.
@@ -23,11 +22,6 @@ public class FileResolve {
     private MediaFile mediaFile;
     public FileResolve(){
         this.mediaFile = mediaFile;
-        try {
-            DefaultConfig.ok();  //检查SD卡可用
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     /**
@@ -41,7 +35,7 @@ public class FileResolve {
         if (!(file.exists())) return -2;  // file is not exists
         Boolean isCreateThumb = false;    //
         String thumbnailFileName = ".thumb_"+mediaFile.getFilename()+".jpg";  //缩略图文件名
-        File thumbnail = new File(DefaultConfig.THUMBNAIL_PATH+"/"+thumbnailFileName);
+        File thumbnail = new File(Config.THUMBNAIL_PATH+"/"+thumbnailFileName);
         if(!thumbnail.exists()){
             isCreateThumb = true;   //判断缩略图是否存在,存在就不再生成
         }else {
@@ -60,7 +54,7 @@ public class FileResolve {
             //create video file thumbnail
             if(isCreateThumb){
                 Bitmap bitmap = getVideoThumbnail(path, 512, 512, MediaStore.Video.Thumbnails.MINI_KIND);
-                File dir = new File(DefaultConfig.THUMBNAIL_PATH);
+                File dir = new File(Config.THUMBNAIL_PATH);
                 if(!dir.exists()) dir.mkdirs();
                 File osFile = new File(dir,thumbnailFileName);
                 FileOutputStream outStream = null;
@@ -88,7 +82,7 @@ public class FileResolve {
             //create image file thumbnail
             if(isCreateThumb){
                 Bitmap bitmap = getImageThumbnail(path, 512, 512);
-                File dir = new File(DefaultConfig.THUMBNAIL_PATH);
+                File dir = new File(Config.THUMBNAIL_PATH);
                 if(!dir.exists()) dir.mkdirs();
                 File osFile = new File(dir,thumbnailFileName);
                 FileOutputStream outStream = null;
@@ -109,6 +103,8 @@ public class FileResolve {
         //size
         mediaFile.setSize(file.length());
         mediaFile.setDate(file.lastModified());
+
+        mediaFile.setEventType(resolveEventType(path));
         return 1;
     }
 
@@ -227,11 +223,31 @@ public class FileResolve {
         Bitmap bitmap = null;
         // 获取视频的缩略图
         bitmap = ThumbnailUtils.createVideoThumbnail(videoPath, kind);
-        System.out.println("w"+bitmap.getWidth());
-        System.out.println("h"+bitmap.getHeight());
-        /*bitmap = ThumbnailUtils.extractThumbnail(bitmap, width, height,
-                ThumbnailUtils.OPTIONS_RECYCLE_INPUT);*/
+
+        bitmap = ThumbnailUtils.extractThumbnail(bitmap, width, height,
+                ThumbnailUtils.OPTIONS_RECYCLE_INPUT);
         return bitmap;
+    }
+
+    private int resolveEventType(String path){
+        String[] pathString  = StorageUtil.splitString(path);
+        int lastIndex = pathString.length-1;
+        //设置文件类型
+        if(pathString[lastIndex-2].equalsIgnoreCase(Config.NORMAL_VIDEO_DIR)){  //正常视频
+            return MediaFile.EventType.NORMAL.get();
+        }else if(pathString[lastIndex-2].equalsIgnoreCase(Config.LOCK_VIDEO_DIR)){  //锁定视频   (目录问题，待修改lastIndex-2)
+            return MediaFile.EventType.LOCKED.get();
+        }else if(pathString[lastIndex-1].equalsIgnoreCase(Config.UPLOAD_VIDEO_DIR)){  //上传视频
+            return MediaFile.EventType.UPLOAD.get();
+        }else if(pathString[lastIndex-1].equalsIgnoreCase(Config.TAKE_PICTURE_DIR)){  //手动照片
+            return MediaFile.EventType.NORMAL.get();
+        }else if(pathString[lastIndex-1].equalsIgnoreCase(Config.UPLOAD_PICTURE_DIR)){  //上传照片
+            return MediaFile.EventType.UPLOAD.get();
+        }else {
+            Log.e("FileResolve","文件目录："+pathString[lastIndex-1]+"不匹配任何一个预定义目录,请检查存储路径");
+            return 0;
+        }
+
     }
 
 }

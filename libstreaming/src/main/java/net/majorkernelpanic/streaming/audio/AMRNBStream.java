@@ -35,7 +35,7 @@ import android.service.textservice.SpellCheckerService.Session;
  * to configure the stream. You can then call {@link #start()} to start the RTP stream.
  * Call {@link #stop()} to stop the stream.
  */
-public class AMRNBStream extends AudioStream {
+public  class AMRNBStream extends AudioStream {
 
 	public AMRNBStream() {
 		super();
@@ -84,6 +84,11 @@ public class AMRNBStream extends AudioStream {
 	@Override
 	protected void encodeWithMediaCodec() throws IOException {
 		super.encodeWithMediaRecorder();
+	}
+
+	@Override
+	protected void encodeWithPatron() throws IOException {
+
 	}
 
 }

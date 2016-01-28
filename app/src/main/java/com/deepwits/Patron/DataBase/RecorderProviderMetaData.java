@@ -3,7 +3,7 @@ package com.deepwits.Patron.DataBase;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
-import com.deepwits.Patron.DefaultConfig;
+import com.deepwits.Patron.Config;
 
 /**
  * Created by Payne on 1/19/16.
@@ -17,11 +17,11 @@ public class RecorderProviderMetaData {
     public static final int VERSION = 1;
     public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.paynexu.media";
     public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd.paynexu.media";
-    public static final String DB_NAME = DefaultConfig.DB_NAME;
+    public static final String DB_NAME = Config.DB_NAME;
 
     public interface MediaFileMetaData extends BaseColumns {
         // 表名
-        public static final String TABLE_NAME = DefaultConfig.DB_MEDIAFILE_TABLE_NAME;
+        public static final String TABLE_NAME = Config.DB_MEDIAFILE_TABLE_NAME;
         // 外部程序访问本表的uri地址
         public static final Uri CONTENT_URI = Uri.parse("content://"
                 + AUTHORITY + "/" + TABLE_NAME);

@@ -55,6 +55,15 @@ public abstract class MediaStream implements Stream {
 	/** Raw audio/video will be encoded using the MediaCode API with a surface. */
 	public static final byte MODE_MEDIACODEC_API_2 = 0x05;
 
+	/**
+	 *  xp add
+	 *  this is a MODE use MediaRecorder to write a local video file,
+	 *  use camera preview surface render YUV data,one the one hand YUV will be
+	 *  encode with MediaCodec then be streamed to RTSP and be muxered a mp4 file ,
+	 *  the another hand will be send to a image identification thread
+	 */
+	public static final byte MODE_PATRON_RECORD = 0x07;
+
 	/** A LocalSocket will be used to feed the MediaRecorder object */
 	public static final byte PIPE_API_LS = 0x01;
 	
@@ -276,6 +285,8 @@ public abstract class MediaStream implements Stream {
 		
 		if (mMode != MODE_MEDIARECORDER_API) {
 			encodeWithMediaCodec();
+		} else if(mMode != MODE_PATRON_RECORD){
+			encodeWithPatron();
 		} else {
 			encodeWithMediaRecorder();
 		}
@@ -309,6 +320,8 @@ public abstract class MediaStream implements Stream {
 	protected abstract void encodeWithMediaRecorder() throws IOException;
 
 	protected abstract void encodeWithMediaCodec() throws IOException;
+
+	protected abstract void encodeWithPatron() throws IOException;
 	
 	/**
 	 * Returns a description of the stream using SDP. 

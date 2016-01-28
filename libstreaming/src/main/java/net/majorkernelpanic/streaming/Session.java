@@ -33,12 +33,14 @@ import net.majorkernelpanic.streaming.exceptions.InvalidSurfaceException;
 import net.majorkernelpanic.streaming.exceptions.StorageUnavailableException;
 import net.majorkernelpanic.streaming.gl.SurfaceView;
 import net.majorkernelpanic.streaming.rtsp.RtspClient;
+import net.majorkernelpanic.streaming.video.PatronStream;
 import net.majorkernelpanic.streaming.video.VideoQuality;
 import net.majorkernelpanic.streaming.video.VideoStream;
 import android.hardware.Camera.CameraInfo;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.util.Log;
 
 /**
  * You should instantiate this class with the {@link SessionBuilder}.<br />
@@ -372,7 +374,12 @@ public class Session {
 				} catch (Exception e) {};
 			}
 		});
-	}	
+	}
+
+	private boolean test = false;
+	public void setTest(){
+		this.test = true;
+	}
 
 	/** 
 	 * Does the same thing as {@link #configure()}, but in a synchronous manner. <br />
@@ -390,9 +397,15 @@ public class Session {
 
 		for (int id=0;id<2;id++) {
 			Stream stream = id==0 ? mAudioStream : mVideoStream;
+			Log.e(TAG, "---------   stream id" + id);
 			if (stream!=null && !stream.isStreaming()) {
 				try {
-					stream.configure();
+					if(test) {
+						PatronStream patronStream = (PatronStream)stream;
+						patronStream.configure(MediaStream.MODE_MEDIACODEC_API);
+						test = false;
+					}else stream.configure();
+
 				} catch (CameraInUseException e) {
 					postError(ERROR_CAMERA_ALREADY_IN_USE , id, e);
 					throw e;

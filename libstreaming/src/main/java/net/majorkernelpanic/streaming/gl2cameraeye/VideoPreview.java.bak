@@ -1,0 +1,840 @@
+package com.deepwits.Patron.gl2cameraeye;
+
+
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.ImageFormat;
+import android.hardware.Camera;
+import android.hardware.Camera.PreviewCallback;
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
+import android.media.MediaFormat;
+import android.media.MediaRecorder;
+import android.opengl.GLSurfaceView;
+import android.os.Build;
+import android.os.Looper;
+import android.util.Log;
+import android.view.Surface;
+import android.view.WindowManager;
+
+import com.deepwits.Patron.Config;
+
+import net.majorkernelpanic.streaming.rtp.H264Packetizer;
+import net.majorkernelpanic.streaming.rtp.MediaCodecInputStream;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
+
+
+
+
+//import org.chromium.base.CalledByNative;  (GL2CameraEye)
+//import org.chromium.base.JNINamespace;
+
+//@JNINamespace("media")
+public class VideoPreview implements PreviewCallback, VideoGLRender.OnFrameListener {
+    private MediaCodec mMediaCodec;
+    private MediaCodec mRtspMediaCodec;
+    private MediaCodec mVideoCodec;
+    private MediaMuxerWrapper muxer;
+    //定义阻塞FIFO队列
+    private AsyncQueue<FrameData> asyncQueue = new AsyncQueue<>();
+    private boolean isEncoder;
+    private boolean isPreview;
+    private H264Packetizer mPacketizer;
+
+    public boolean isPreview(){
+        return this.isPreview;
+    }
+
+    static class CaptureFormat {
+        public CaptureFormat(
+                int width, int height, int framerate, int pixelformat) {
+            mWidth = width;
+            mHeight = height;
+            mFramerate = framerate;
+            mPixelFormat = pixelformat;
+        }
+        public int mWidth;
+        public int mHeight;
+        public final int mFramerate;
+        public final int mPixelFormat;
+        //@CalledByNative("CaptureFormat")
+        public int getWidth() {
+            return mWidth;
+        }
+        //@CalledByNative("CaptureFormat")
+        public int getHeight() {
+            return mHeight;
+        }
+        //@CalledByNative("CaptureFormat")
+        public int getFramerate() {
+            return mFramerate;
+        }
+        //@CalledByNative("CaptureFormat")
+        public int getPixelFormat() {
+            return mPixelFormat;
+        }
+    }
+
+    // Some devices don't support YV12 format correctly, even with JELLY_BEAN or
+    // newer OS. To work around the issues on those devices, we have to request
+    // NV21. Some other devices have troubles with certain capture resolutions
+    // under a given one: for those, the resolution is swapped with a known
+    // good. Both are supposed to be temporary hacks.
+    private static class BuggyDeviceHack {
+        private static class IdAndSizes {
+            IdAndSizes(String model, String device, int minWidth, int minHeight) {
+                mModel = model;
+                mDevice = device;
+                mMinWidth = minWidth;
+                mMinHeight = minHeight;
+            }
+            public final String mModel;
+            public final String mDevice;
+            public final int mMinWidth;
+            public final int mMinHeight;
+        }
+        private static final IdAndSizes s_CAPTURESIZE_BUGGY_DEVICE_LIST[] = {
+            new IdAndSizes("Nexus 7", "flo", 640, 480)
+        };
+
+        private static final String[] s_COLORSPACE_BUGGY_DEVICE_LIST = {
+            "SAMSUNG-SGH-I747",
+            "ODROID-U2",
+        };
+
+        static void applyMinDimensions(CaptureFormat format) {
+            // NOTE: this can discard requested aspect ratio considerations.
+            for (IdAndSizes buggyDevice : s_CAPTURESIZE_BUGGY_DEVICE_LIST) {
+                if (buggyDevice.mModel.contentEquals(android.os.Build.MODEL) &&
+                        buggyDevice.mDevice.contentEquals(android.os.Build.DEVICE)) {
+                    format.mWidth = (buggyDevice.mMinWidth > format.mWidth)
+                                        ? buggyDevice.mMinWidth
+                                        : format.mWidth;
+                    format.mHeight = (buggyDevice.mMinHeight > format.mHeight)
+                                         ? buggyDevice.mMinHeight
+                                         : format.mHeight;
+                }
+            }
+        }
+
+        static int getImageFormat() {
+            if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.JELLY_BEAN) {
+                return ImageFormat.NV21;
+            }
+
+            for (String buggyDevice : s_COLORSPACE_BUGGY_DEVICE_LIST) {
+                if (buggyDevice.contentEquals(android.os.Build.MODEL)) {
+                    return ImageFormat.NV21;
+                }
+            }
+            return ImageFormat.YV12;
+        }
+    }
+
+    private Camera mCamera;
+    public ReentrantLock mPreviewBufferLock = new ReentrantLock();
+    private Context mContext = null;
+    // True when native code has started capture.
+    private boolean mIsRunning = false;
+
+    private static final int NUM_CAPTURE_BUFFERS = 3;
+    private int mExpectedFrameSize = 0;
+    private int mId = 0;
+    // Native callback context variable.
+    private long mNativeVideoCaptureDeviceAndroid = 0;
+
+    private int mCameraOrientation = 0;
+    private int mCameraFacing = 0;
+    private int mDeviceOrientation = 0;
+
+    CaptureFormat mCaptureFormat = null;
+    private VideoGLSurfaceView mGlSurfaceView = null;
+    private Looper mLooper = null;
+    private static final String TAG = "VideoCapture";
+
+    public static VideoPreview createVideoPreview(
+            Context context, int id, long nativeVideoCaptureDeviceAndroid) {
+        return new VideoPreview(context, id, nativeVideoCaptureDeviceAndroid);
+    }
+
+    //@CalledByNative
+    public static CaptureFormat[] getDeviceSupportedFormats(int id) {
+        Camera camera;
+        try {
+             camera = Camera.open(id);
+        } catch (RuntimeException ex) {
+            Log.e(TAG, "Camera.open: " + ex);
+            return null;
+        }
+        Camera.Parameters parameters = camera.getParameters();
+
+        ArrayList<CaptureFormat> formatList = new ArrayList<CaptureFormat>();
+        // getSupportedPreview{Formats,FpsRange,PreviewSizes}() returns Lists
+        // with at least one element, but when the camera is in bad state, they
+        // can return null pointers; in that case we use a 0 entry, so we can
+        // retrieve as much information as possible.
+        List<Integer> pixelFormats = parameters.getSupportedPreviewFormats();
+        if (pixelFormats == null) {
+            pixelFormats = new ArrayList<Integer>();
+        }
+        if (pixelFormats.size() == 0) {
+            pixelFormats.add(ImageFormat.UNKNOWN);
+        }
+        for (Integer previewFormat : pixelFormats) {
+            int pixelFormat = 0;
+
+            List<int[]> listFpsRange = parameters.getSupportedPreviewFpsRange();
+            if (listFpsRange == null) {
+                listFpsRange = new ArrayList<int[]>();
+            }
+            if (listFpsRange.size() == 0) {
+                listFpsRange.add(new int[] {0, 0});
+            }
+            for (int[] fpsRange : listFpsRange) {
+                List<Camera.Size> supportedSizes =
+                        parameters.getSupportedPreviewSizes();
+                if (supportedSizes == null) {
+                    supportedSizes = new ArrayList<Camera.Size>();
+                }
+                if (supportedSizes.size() == 0) {
+                    supportedSizes.add(camera.new Size(0, 0));
+                }
+                for (Camera.Size size : supportedSizes) {
+                    formatList.add(new CaptureFormat(size.width, size.height,
+                            (fpsRange[0] + 999 ) / 1000, pixelFormat));
+                }
+            }
+        }
+        camera.release();
+        return formatList.toArray(new CaptureFormat[formatList.size()]);
+    }
+
+    public VideoPreview(
+            Context context, int id, long nativeVideoCaptureDeviceAndroid) {
+        mContext = context;
+        mId = id;
+        mNativeVideoCaptureDeviceAndroid = nativeVideoCaptureDeviceAndroid;
+    }
+
+    // Returns true on success, false otherwise.
+    //@CalledByNative
+    public boolean start(int width, int height, int frameRate) {
+        Log.d(TAG, "allocate: requested (" + width + "x" + height + ")@" +
+                frameRate + "fps");
+        try {
+            mCamera = Camera.open(mId);
+        } catch (RuntimeException ex) {
+            Log.e(TAG, "allocate: Camera.open: " + ex);
+            return false;
+        }
+
+        Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+        Camera.getCameraInfo(mId, cameraInfo);
+        mCameraOrientation = cameraInfo.orientation;
+        mCameraFacing = cameraInfo.facing;
+        mDeviceOrientation = getDeviceOrientation();
+        Log.d(TAG, "allocate: orientation dev=" + mDeviceOrientation + ", cam=" + mCameraOrientation + ", facing=" + mCameraFacing);
+
+        Camera.Parameters parameters = mCamera.getParameters();
+
+        // getSupportedPreviewFpsRange() returns a List with at least one
+        // element, but when camera is in bad state, it can return null pointer.
+        List<int[]> listFpsRange = parameters.getSupportedPreviewFpsRange();
+        if (listFpsRange == null || listFpsRange.size() == 0) {
+            Log.e(TAG, "allocate: no fps range found");
+            return false;
+        }
+        int frameRateInMs = frameRate * 1000;
+        // Use the first range as default.
+        int[] fpsMinMax = listFpsRange.get(0);
+        int newFrameRate = (fpsMinMax[0] + 999) / 1000;
+        for (int[] fpsRange : listFpsRange) {
+            if (fpsRange[0] <= frameRateInMs && frameRateInMs <= fpsRange[1]) {
+                fpsMinMax = fpsRange;
+                newFrameRate = frameRate;
+                break;
+            }
+        }
+        frameRate = newFrameRate;
+        Log.d(TAG, "allocate: fps set to " + frameRate);
+
+        // Calculate size.
+        List<Camera.Size> listCameraSize =
+                parameters.getSupportedPreviewSizes();
+        int minDiff = Integer.MAX_VALUE;
+        int matchedWidth = width;
+        int matchedHeight = height;
+        for (Camera.Size size : listCameraSize) {
+            int diff = Math.abs(size.width - width) +
+                       Math.abs(size.height - height);
+            Log.d(TAG, "allocate: supported (" +
+                    size.width + ", " + size.height + "), diff=" + diff);
+            // TODO(wjia): Remove this hack (forcing width to be multiple
+            // of 32) by supporting stride in video frame buffer.
+            // Right now, VideoCaptureController requires compact YV12
+            // (i.e., with no padding).
+            if (diff < minDiff && (size.width % 32 == 0)) {
+                minDiff = diff;
+                matchedWidth = size.width;
+                matchedHeight = size.height;
+            }
+        }
+        if (minDiff == Integer.MAX_VALUE) {
+            Log.e(TAG, "allocate: can not find a multiple-of-32 resolution");
+            return false;
+        }
+
+        mCaptureFormat = new CaptureFormat(
+                matchedWidth, matchedHeight, frameRate,
+                BuggyDeviceHack.getImageFormat());
+        // Hack to avoid certain capture resolutions under a minimum one,
+        // see http://crbug.com/305294
+        BuggyDeviceHack.applyMinDimensions(mCaptureFormat);
+        Log.d(TAG, "allocate: matched (" + mCaptureFormat.mWidth + "x" +
+                mCaptureFormat.mHeight + ")");
+
+        if (parameters.isVideoStabilizationSupported()) {
+            Log.d(TAG, "Image stabilization supported, currently: "
+                    + parameters.getVideoStabilization() + ", setting it.");
+            parameters.setVideoStabilization(true);
+        } else {
+            Log.d(TAG, "Image stabilization not supported.");
+        }
+
+        mGlSurfaceView = new VideoGLSurfaceView(mContext,
+                this,
+                mCamera,
+                mCaptureFormat.mWidth,
+                mCaptureFormat.mHeight);
+        mLooper = Looper.myLooper();
+
+        parameters.setPreviewSize(mCaptureFormat.mWidth,
+                mCaptureFormat.mHeight);
+        parameters.setPreviewFormat(mCaptureFormat.mPixelFormat);
+        parameters.setPreviewFpsRange(fpsMinMax[0], fpsMinMax[1]);
+        mCamera.setParameters(parameters);
+
+        int bufSize = mCaptureFormat.mWidth *
+                mCaptureFormat.mHeight *
+                ImageFormat.getBitsPerPixel(
+                        mCaptureFormat.mPixelFormat) / 8;
+
+        for (int i = 0; i < NUM_CAPTURE_BUFFERS; i++) {
+            byte[] buffer = new byte[bufSize];
+            mCamera.addCallbackBuffer(buffer);
+        }
+        mExpectedFrameSize = bufSize;
+
+        return true;
+
+
+    }
+
+    //@CalledByNative
+    public int queryWidth() {
+        return mCaptureFormat.mWidth;
+    }
+
+    //@CalledByNative
+    public int queryHeight() {
+        return mCaptureFormat.mHeight;
+    }
+
+    //@CalledByNative
+    public int queryFrameRate() {
+        return mCaptureFormat.mFramerate;
+    }
+
+    //@CalledByNative
+    public int getColorspace() {
+        return ImageFormat.YV12;
+/*      switch (mCaptureFormat.mPixelFormat) {                    (GL2CameraEye)
+            case ImageFormat.YV12:
+                return AndroidImageFormatList.ANDROID_IMAGEFORMAT_YV12;
+            case ImageFormat.NV21:
+                return AndroidImageFormatList.ANDROID_IMAGEFORMAT_NV21;
+            case ImageFormat.UNKNOWN:
+            default:
+                return AndroidImageFormatList.ANDROID_IMAGEFORMAT_UNKNOWN;
+        }
+*/
+    }
+
+    public GLSurfaceView getSurfaceView() {  // (GL2CameraEye)
+        return mGlSurfaceView;
+    }
+
+    //@CalledByNative
+    public int startPreview() {
+        Log.d(TAG, "startCapture");
+        if (mCamera == null) {
+            Log.e(TAG, "startCapture: camera is null");
+            return -1;
+        }
+
+        mPreviewBufferLock.lock();
+        try {
+            if (mIsRunning) {
+                return 0;
+            }
+            mIsRunning = true;
+        } finally {
+            mPreviewBufferLock.unlock();
+        }
+        mCamera.setPreviewCallbackWithBuffer(null);
+        mCamera.startPreview();
+        isPreview = true;
+
+        return 0;
+    }
+
+    //@CalledByNative
+    public int stopPreview() {
+    	/*if(mMuxer!=null){
+    		mMuxer.stop();
+    	}*/
+
+        Log.d(TAG, "stopCapture");
+        if (mCamera == null) {
+            Log.e(TAG, "stopCapture: camera is null");
+            return 0;
+        }
+
+        mPreviewBufferLock.lock();
+        try {
+            if (!mIsRunning) {
+                return 0;
+            }
+            mIsRunning = false;
+        } finally {
+            mPreviewBufferLock.unlock();
+        }
+
+        mCamera.stopPreview();
+        mCamera.setPreviewCallbackWithBuffer(null);
+        return 0;
+    }
+
+    //@CalledByNative
+    public void stop() {
+    	
+        Log.d(TAG, "deallocate");
+        if (mCamera == null){
+            return;
+        }
+
+        stopPreview();
+        mCaptureFormat = null;
+        mCamera.release();
+        mCamera = null;
+        mGlSurfaceView.onPause();
+        //mLooper.quit();  // Don't quit if we're the main loop (GL2CameraEye).
+    }
+
+    @Override
+    public void onPreviewFrame(byte[] data, Camera camera) {
+        mPreviewBufferLock.lock();
+        try {
+            if (!mIsRunning) {
+                return;
+            }
+            if (data.length == mExpectedFrameSize) {
+                int rotation = getDeviceOrientation();
+                if (rotation != mDeviceOrientation) {
+                    mDeviceOrientation = rotation;
+                    Log.d(TAG,
+                            "onPreviewFrame: device orientation=" +
+                                    mDeviceOrientation + ", camera orientation=" +
+                                    mCameraOrientation);
+                }
+                if (mCameraFacing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                    rotation = 360 - rotation;
+                }
+                rotation = (mCameraOrientation + rotation) % 360;
+                nativeOnFrameAvailable(mNativeVideoCaptureDeviceAndroid,
+                        data, mExpectedFrameSize, rotation);
+            }
+        } finally {
+            mPreviewBufferLock.unlock();
+            if (camera != null) {
+                camera.addCallbackBuffer(data);
+            }
+        }
+    }
+
+    MediaMuxerWrapper mMuxer = null;
+    private int count_put = 0;
+    private int count_frame = 0;
+    private byte[] heard = new byte[54];
+    FileInputStream fi = null;
+    void  test(){
+        try {
+            fi = new FileInputStream("/sdcard/test.jpg");
+            fi.read(heard, 0, 53);
+            fi.close();
+
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    //BMP文件头
+    private byte[] addBMPImageHeader(int size) {
+        byte[] buffer = new byte[14];
+        buffer[0] = 0x42;
+        buffer[1] = 0x4D;
+        buffer[2] = (byte) (size >> 0);
+        buffer[3] = (byte) (size >> 8);
+        buffer[4] = (byte) (size >> 16);
+        buffer[5] = (byte) (size >> 24);
+        buffer[6] = 0x00;
+        buffer[7] = 0x00;
+        buffer[8] = 0x00;
+        buffer[9] = 0x00;
+        buffer[10] = 0x36;
+        buffer[11] = 0x00;
+        buffer[12] = 0x00;
+        buffer[13] = 0x00;
+        return buffer;
+    }
+    //BMP文件信息头
+    private byte[] addBMPImageInfosHeader(int w, int h) {
+        byte[] buffer = new byte[40];
+        buffer[0] = 0x28;
+        buffer[1] = 0x00;
+        buffer[2] = 0x00;
+        buffer[3] = 0x00;
+        buffer[4] = (byte) (w >> 0);
+        buffer[5] = (byte) (w >> 8);
+        buffer[6] = (byte) (w >> 16);
+        buffer[7] = (byte) (w >> 24);
+        buffer[8] = (byte) (h >> 0);
+        buffer[9] = (byte) (h >> 8);
+        buffer[10] = (byte) (h >> 16);
+        buffer[11] = (byte) (h >> 24);
+        buffer[12] = 0x01;
+        buffer[13] = 0x00;
+        buffer[14] = 0x18;
+        buffer[15] = 0x00;
+        buffer[16] = 0x00;
+        buffer[17] = 0x00;
+        buffer[18] = 0x00;
+        buffer[19] = 0x00;
+        buffer[20] = 0x00;
+        buffer[21] = 0x00;
+        buffer[22] = 0x00;
+        buffer[23] = 0x00;
+        buffer[24] = (byte) 0xE0;
+        buffer[25] = 0x01;
+        buffer[26] = 0x00;
+        buffer[27] = 0x00;
+        buffer[28] = 0x02;
+        buffer[29] = 0x03;
+        buffer[30] = 0x00;
+        buffer[31] = 0x00;
+        buffer[32] = 0x00;
+        buffer[33] = 0x00;
+        buffer[34] = 0x00;
+        buffer[35] = 0x00;
+        buffer[36] = 0x00;
+        buffer[37] = 0x00;
+        buffer[38] = 0x00;
+        buffer[39] = 0x00;
+        return buffer;
+    }
+    private byte[] addBMP_RGB_888(int[] b,int w, int h) {
+        int len = b.length;
+        System.out.println(b.length);
+        byte[] buffer = new byte[w*h * 3];
+        int offset=0;
+        for (int i = len-1; i>=w; i-=w) {
+//DIB文件格式最后一行为第一行，每行按从左到右顺序
+            int end=i,start=i-w+1;
+            for(int j=start;j<=end;j++){
+                buffer[offset]=(byte)(b[j]>>0);
+                buffer[offset+1]=(byte)(b[j]>>8);
+                buffer[offset+2]=(byte)(b[j]>>16);
+                offset += 3;
+            }
+        }
+        return buffer;
+    }
+    @Override
+    public void onFrame(byte[] data, int data_size) {
+
+        mPreviewBufferLock.lock();
+        try {  // Nobody receives the buffer (GL2CameraEye)
+            /*//nativeOnFrameAvailable(
+            //        mNativeVideoCaptureDeviceAndroid, data, data_size, 0);
+        	counter++;
+        	Log.e(TAG, "" + System.currentTimeMillis() + "  frame: " + counter + "  size:" + data_size + "  data.length:" + data.length);
+        	if(mMuxer==null){
+        		mMuxer =  MediaMuxerWrapper.create("/sdcard/rec/c_" + System.currentTimeMillis() + ".mp4");
+        		mMuxer.addVideoTrack(320,240, 30);
+        	}
+        	if(this.mMuxer!=null){
+        		this.mMuxer.writeVideoSample(data);
+        	}*/
+
+
+            if(count_frame>7){
+
+                /*FileOutputStream filecon11 = new FileOutputStream("/sdcard/rec/test_"+System.currentTimeMillis()+".jpg");
+                filecon11.write(heard,0,heard.length-1);
+                filecon11.write(data,0,data.length-1);
+                filecon11.close();*/
+
+                FileOutputStream filecon = new FileOutputStream("/sdcard/rec/frame_"+System.currentTimeMillis()+".jpg");
+                Bitmap bitmap = MyBitmapFactory.createMyBitmap(data, 320, 240);
+                int w = bitmap.getWidth(), h = bitmap.getHeight();
+                int[] pixels=new int[w*h];
+                bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
+                byte[] rgb = addBMP_RGB_888(pixels,w,h);
+                byte[] header = addBMPImageHeader(rgb.length);
+                byte[] infos = addBMPImageInfosHeader(w, h);
+                byte[] buffer = new byte[54 + rgb.length];
+                System.arraycopy(header, 0, buffer, 0, header.length);
+                System.arraycopy(infos, 0, buffer, 14, infos.length);
+                System.arraycopy(rgb, 0, buffer, 54, rgb.length);
+                filecon.write(buffer);
+
+
+                //bitmap.compress(Bitmap.CompressFormat.JPEG, 90, filecon);
+                filecon.close();
+                count_frame++;
+            }
+
+
+            //Log.e(TAG,"onPreviewFrame isRecording data:"+data.length+" width:"+320+" height:"+240);
+            FrameData frameData = new FrameData();
+            frameData.time = System.currentTimeMillis();
+            frameData.data = new byte[320 * 240 * 3 / 2];
+            asyncQueue.put(frameData); //进队列
+            count_put++;
+
+        } catch (Exception e) {
+        	Log.e(TAG, e.getMessage(), e);
+		} finally {
+            mPreviewBufferLock.unlock();
+        }
+    }
+
+    private int conut_chu = 0;
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+    public String startShortVideo() throws Exception {
+
+            isEncoder = true;
+
+            count_put = 0;
+
+            muxer = MediaMuxerWrapper.create("/sdcard/rec/xp_"+System.currentTimeMillis()+".mp4");//创建MediaMuxer
+            muxer.addVideoTrack(320,240,20, MediaCodecInfo.CodecCapabilities.COLOR_Format24bitBGR888);
+            muxer.start();
+
+            asyncQueue.setHandler(new AsyncQueue.Handler<FrameData>() {
+                @Override
+                public void onStart() {
+
+                }
+
+                @Override
+                public void onData(FrameData frameData) {
+                    Log.e(TAG,"FrameData onData length:"+frameData.data.length);
+                    muxer.writeVideoSample(frameData.data);
+                    conut_chu++;
+                }
+
+                @Override
+                public void onFinish() {
+                    muxer.stop();
+                    stopVideoAndRelease();
+                }
+            });
+            asyncQueue.start();
+            Log.e(TAG, "Encoder startShortVideo success !! " + "isEncoder" + isEncoder + "Output Path :");
+            return "ok";
+
+    }
+    private void stopVideoAndRelease() {
+        Log.e(TAG, "stopVideoAndRelease......put :" + count_put + "  chu:" + conut_chu);
+
+        if (mVideoCodec != null) {
+            Log.d(TAG, "VideoCodec Stop");
+            this.mVideoCodec.stop();
+            this.mVideoCodec.release();
+            this.mVideoCodec = null;
+            Log.d(TAG, "VideoCodec Stoped!!" + this.mVideoCodec);
+        }
+    }
+    private ByteBuffer[] RtspInputBuffers = null;
+    private long oldnow = 0;
+
+    public void rtspFrame(byte[] data){
+        long now = System.nanoTime()/1000, i=0;
+        oldnow = now;
+        RtspInputBuffers = mMediaCodec.getInputBuffers();
+        try {
+            int bufferIndex = mRtspMediaCodec.dequeueInputBuffer(500000);
+            if (bufferIndex>=0) {
+                RtspInputBuffers[bufferIndex].clear();
+                if (data == null) Log.e(TAG,"Symptom of the \"Callback buffer was to small\" problem...");
+                else {
+                    ByteBuffer buffer = RtspInputBuffers[bufferIndex];
+                    int min = buffer.capacity() < data.length?buffer.capacity() : data.length;
+                    buffer.put(data, 0, min);
+                }
+                mRtspMediaCodec.queueInputBuffer(bufferIndex, 0, RtspInputBuffers[bufferIndex].position(), now, 0);
+            } else {
+                Log.e(TAG,"No buffer available !");
+            }
+        } finally {
+            mCamera.addCallbackBuffer(data);
+        }
+    }
+
+    public void startStream(){
+        Log.e("RTSP","startStream");
+        try {
+            mRtspMediaCodec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        MediaFormat mediaFormat = MediaFormat.createVideoFormat("video/avc",Config.getSpI(Config.RTSP_VID_WIDTH),Config.getSpI(Config.RTSP_VID_HEIGHT) );
+        mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 500000);
+        mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, Config.getSpI(Config.RTSP_VID_FRAMERATE));
+        mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_Format24bitRGB888);
+        mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
+        mRtspMediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        mRtspMediaCodec.start();
+
+        // The packetizer encapsulates the bit stream in an RTP stream and send it over the network
+        mPacketizer = new H264Packetizer();
+        mPacketizer.setInputStream(new MediaCodecInputStream(mRtspMediaCodec));
+        mPacketizer.start();
+        isStreaming = true;
+    }
+    public void stopStream(){
+        mPacketizer.stop();
+        mRtspMediaCodec.stop();
+        mRtspMediaCodec.release();
+        mRtspMediaCodec = null;
+        isStreaming = true;
+
+    }
+
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+    public void stopShortVideo() {
+        Log.i(TAG, "stopShortVideo " + isEncoder);
+        isEncoder = false; //不往队列送数据(不在生产数据)
+        asyncQueue.stop();
+        Log.i(TAG, "stopShortVideoed!!! " + isEncoder);
+    }
+    
+    private int counter = 0;
+
+
+    private native void nativeOnFrameAvailable(
+            long nativeVideoCaptureDeviceAndroid,
+            byte[] data,
+            int length,
+            int rotation);
+
+    public int getDeviceOrientation() {
+        int orientation = 0;
+        if (mContext != null) {
+            WindowManager wm = (WindowManager) mContext.getSystemService(
+                    Context.WINDOW_SERVICE);
+            switch(wm.getDefaultDisplay().getRotation()) {
+                case Surface.ROTATION_90:
+                    orientation = 90;
+                    break;
+                case Surface.ROTATION_180:
+                    orientation = 180;
+                    break;
+                case Surface.ROTATION_270:
+                    orientation = 270;
+                    break;
+                case Surface.ROTATION_0:
+                default:
+                    orientation = 0;
+                    break;
+            }
+        }
+        return orientation;
+    }
+
+	private final int VIDEO_WIDTH = 1920;
+	private final int VIDEO_HEIGHT = 1080;
+    private MediaRecorder mRecorder = null;
+    private boolean recording = false;
+    private boolean isStreaming =false;
+    private String mOutputFile = null;
+    public void setOutputFile(String file){
+    	this.mOutputFile = file;
+    }
+    public boolean isRecording(){
+    	return this.recording;
+    }
+    public boolean isStreaming(){
+        return this.isStreaming;
+    }
+
+    public void startRecord() throws IllegalStateException, IOException {
+    	if (this.mRecorder == null) {
+			this.mRecorder = new MediaRecorder();
+		}
+		this.mRecorder.reset();
+		/* ====== initCarema =========== */
+		try {
+			if (this.mCamera != null) {
+				this.mCamera.unlock();
+			}
+			this.mRecorder.setCamera(mCamera);
+		} catch (Throwable e) {
+			if (this.mCamera != null) {
+				this.mCamera.release();
+			}
+			this.mCamera = null;
+		}
+		/* ================== */
+		this.mRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+		this.mRecorder.setAudioSource(MediaRecorder.VideoSource.CAMERA);
+		this.mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+		this.mRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+		this.mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB);
+		this.mRecorder.setVideoEncodingBitRate(8000000);
+		this.mRecorder.setVideoSize(VIDEO_WIDTH, VIDEO_HEIGHT);
+		this.mRecorder.setVideoFrameRate(30);
+//		this.mRecorder.setPreviewDisplay(this.mSurfaceHolder.getSurface());
+		if(mOutputFile!=null){
+			this.mRecorder.setOutputFile(mOutputFile);
+		}
+		this.mRecorder.prepare();
+		this.mRecorder.start();
+		recording = true;
+    }
+    public void stopRecord(){
+    	if(mRecorder!=null){
+    		mRecorder.stop();
+    		mRecorder.release();
+    		mRecorder = null;
+    	}
+    	recording = false;
+    }
+
+
+}

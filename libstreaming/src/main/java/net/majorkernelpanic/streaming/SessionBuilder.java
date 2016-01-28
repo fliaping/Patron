@@ -30,6 +30,7 @@ import net.majorkernelpanic.streaming.audio.AudioStream;
 import net.majorkernelpanic.streaming.gl.SurfaceView;
 import net.majorkernelpanic.streaming.video.H263Stream;
 import net.majorkernelpanic.streaming.video.H264Stream;
+import net.majorkernelpanic.streaming.video.PatronStream;
 import net.majorkernelpanic.streaming.video.VideoQuality;
 import net.majorkernelpanic.streaming.video.VideoStream;
 import android.content.Context;
@@ -128,7 +129,8 @@ public class SessionBuilder {
 			session.addVideoTrack(new H263Stream(mCamera));
 			break;
 		case VIDEO_H264:
-			H264Stream stream = new H264Stream(mCamera);
+			//H264Stream stream = new H264Stream(mCamera);
+			PatronStream stream = new PatronStream();
 			if (mContext!=null) 
 				stream.setPreferences(PreferenceManager.getDefaultSharedPreferences(mContext));
 			session.addVideoTrack(stream);
@@ -137,12 +139,13 @@ public class SessionBuilder {
 
 		if (session.getVideoTrack()!=null) {
 			VideoStream video = session.getVideoTrack();
-			video.setFlashState(mFlash);
-			video.setVideoQuality(mVideoQuality);
-			video.setSurfaceView(mSurfaceView);
-			video.setPreviewOrientation(mOrientation);
+			//video.setFlashState(mFlash);
+			//video.setVideoQuality(mVideoQuality);
+			//video.setSurfaceView(mSurfaceView);
+			//video.setPreviewOrientation(mOrientation);
 			video.setDestinationPorts(5006);
-			video.setStreamingMethod(MediaStream.MODE_MEDIARECORDER_API);
+			video.setStreamingMethod(MediaStream.MODE_PATRON_RECORD);
+
 		}
 
 		if (session.getAudioTrack()!=null) {

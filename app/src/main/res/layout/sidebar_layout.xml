@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layout"
+    android:layout_width="300dp"
+    android:layout_height="200dp"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:id="@+id/mPreview"
+        android:layout_width="400px"
+        android:layout_height="400px"/>
+    <Button
+        android:id="@+id/start"
+        android:text="start"
+        android:layout_width="100px"
+        android:layout_height="50px" />
+
+
+</LinearLayout>

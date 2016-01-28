@@ -3,15 +3,25 @@ package com.deepwits.Patron.DataBase;
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
+import com.deepwits.Patron.Config;
 import com.deepwits.Patron.DataBase.DBOpenHelper;
 import com.deepwits.Patron.DataBase.MediaFileDAOImpl;
 import com.deepwits.Patron.StorageManager.StorageManager;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Iterator;
+import java.util.Map;
 
 public class RecorderProvider extends ContentProvider {
 
@@ -19,6 +29,7 @@ public class RecorderProvider extends ContentProvider {
     private static UriMatcher uriMatcher = null;
     private static final int COLLECTION_INDICATOR = 1;
     private static final int SINGLE_INDICATOR = 2;
+    private static final int SETTING = 3;
     private static final String MF_TABLE_NAME = RecorderProviderMetaData.MediaFileMetaData.TABLE_NAME;
     private DBOpenHelper dbHelper;
     private SQLiteDatabase db;
@@ -29,6 +40,7 @@ public class RecorderProvider extends ContentProvider {
                 MF_TABLE_NAME, COLLECTION_INDICATOR);
         uriMatcher.addURI(RecorderProviderMetaData.AUTHORITY,
                 MF_TABLE_NAME+"/#", SINGLE_INDICATOR);
+        uriMatcher.addURI(RecorderProviderMetaData.AUTHORITY, "/getSetting", SETTING);
     }
     MediaFileDAOImpl mediaFileDAO = null;
     StorageManager storageManager = null;
@@ -63,10 +75,15 @@ public class RecorderProvider extends ContentProvider {
 
     @Override
     public String getType(Uri uri) {
-        // TODO: Implement this to handle requests for the MIME type of the data
-        // at the given URI.
-        throw new UnsupportedOperationException("Not yet implemented");
+        switch (uriMatcher.match(uri)){
+            case SETTING :
+                return getSetting();
+            default:
+                throw new IllegalArgumentException("This is a unKnow Uri"
+                        + uri.toString());
+        }
     }
+
 
     @Override
     public Uri insert(Uri uri, ContentValues values) {
@@ -140,5 +157,28 @@ public class RecorderProvider extends ContentProvider {
                 throw new IllegalArgumentException("This is a unKnow Uri"
                         + uri.toString());
         }
+    }
+
+    /**
+     * 获取所有配置信息
+     * @return
+     */
+    public String getSetting(){
+        SharedPreferences sp = getContext().getSharedPreferences(Config.SETTING_SP_NAME, getContext().MODE_PRIVATE);
+        JSONObject jsonvalue = new JSONObject();
+        Map map = sp.getAll();
+        if(map != null){
+        Iterator it = map.entrySet().iterator();
+            while (it.hasNext()){
+                Map.Entry<String,String> entry = (Map.Entry<String, String>) it.next();
+                try {
+                    jsonvalue.put(entry.getKey(),entry.getValue());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return jsonvalue.toString();
     }
 }

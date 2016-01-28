@@ -48,6 +48,7 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+
 /**
  * Implementation of a subset of the RTSP protocol (RFC 2326).
  * 
@@ -56,7 +57,7 @@ import android.util.Log;
  * The Session will start or stop streams according to what the client wants.
  * 
  */
-public class RtspServer extends Service {
+public class RtspServer extends Service{
 
 	public final static String TAG = "RtspServer";
 
@@ -211,10 +212,10 @@ public class RtspServer extends Service {
 		return bitrate;
 	}
 	
-	@Override
+	/*@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		return START_STICKY;
-	}
+	}*/
 
 	@Override
 	public void onCreate() {
@@ -474,7 +475,7 @@ public class RtspServer extends Service {
 				if (!m.find()) {
 					response.status = Response.STATUS_BAD_REQUEST;
 					return response;
-				} 
+				}
 
 				trackId = Integer.parseInt(m.group(1));
 
@@ -564,7 +565,6 @@ public class RtspServer extends Service {
 			return response;
 
 		}
-
 	}
 
 	static class Request {
@@ -578,7 +578,7 @@ public class RtspServer extends Service {
 		public String uri;
 		public HashMap<String,String> headers = new HashMap<String,String>();
 
-		/** Parse the method, uri & headers of a RTSP request */
+		/** Parse the method, uri  & headers of a RTSP request */
 		public static Request parseRequest(BufferedReader input) throws IOException, IllegalStateException, SocketException {
 			Request request = new Request();
 			String line;

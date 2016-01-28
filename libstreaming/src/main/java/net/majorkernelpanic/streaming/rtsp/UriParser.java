@@ -44,6 +44,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
 import android.hardware.Camera.CameraInfo;
+import android.util.Log;
 
 /**
  * This class parses URIs received by the RTSP server and configures a Session accordingly.
@@ -76,6 +77,8 @@ public class UriParser {
 			// Those parameters must be parsed first or else they won't necessarily be taken into account
 			for (Iterator<NameValuePair> it = params.iterator();it.hasNext();) {
 				NameValuePair param = it.next();
+
+				Log.e(TAG,"params: "+param.getName() +" " +param.getValue());
 
 				// FLASH ON/OFF
 				if (param.getName().equalsIgnoreCase("flash")) {

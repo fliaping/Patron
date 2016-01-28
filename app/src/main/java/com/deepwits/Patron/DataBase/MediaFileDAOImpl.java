@@ -2,16 +2,17 @@ package com.deepwits.Patron.DataBase;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.provider.MediaStore;
+import android.util.Log;
 
-import com.deepwits.Patron.DataBase.DBOpenHelper;
-import com.deepwits.Patron.DefaultConfig;
+import com.deepwits.Patron.Config;
 import com.deepwits.Patron.Recorder.RecordService;
 import com.deepwits.Patron.StorageManager.FileResolve;
 import com.deepwits.Patron.StorageManager.MediaFile;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -29,7 +30,7 @@ public class MediaFileDAOImpl {
     public boolean add(MediaFile mediaFile) {// 插入记录
         SQLiteDatabase db = dbOpenHelper.getWritableDatabase();// 取得数据库操作
         if(0 == mediaFile.getId()){
-            db.execSQL("insert into "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+" (filename,path,size,width,height," +
+            db.execSQL("insert into "+ Config.DB_MEDIAFILE_TABLE_NAME+" (filename,path,size,width,height," +
                             "date,duration,thumb_path,latitude,longitude,event_type,media_type,command_origin) values(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     new Object[]{ mediaFile.getFilename(), mediaFile.getPath(), mediaFile.getSize(), mediaFile.getWidth(),
                             mediaFile.getHeight(), mediaFile.getDate(), mediaFile.getDuration(),mediaFile.getThumbPath(),
@@ -41,24 +42,32 @@ public class MediaFileDAOImpl {
     }
 
     public boolean delete(int id) {// 删除纪录
+        Log.e(TAG,"delete db id" + id);
         SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
-        db.execSQL("delete from " + DefaultConfig.DB_MEDIAFILE_TABLE_NAME + " where id=?", new Integer[]{id});
+        db.execSQL("delete from " + Config.DB_MEDIAFILE_TABLE_NAME + " where id=?", new Integer[]{id});
         db.close();
         return true;
     }
 
     public boolean update(MediaFile mediaFile) {// 修改纪录
+        mediaFile.print("MediaFileDAOImpl");
         SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
-        if(mediaFile.getId()!=0){
-            db.execSQL("update " + DefaultConfig.DB_MEDIAFILE_TABLE_NAME +
-                            " set filename=?,path=?,size=?,width=?,height=?,date=?,duration=?,thumb_path=?,latitude=?" +
-                            " longitude=?,event_type=?,media_type=?,command_origin=? where id=?",
+        if(mediaFile.getId() > 0){
+            db.execSQL("update " + Config.DB_MEDIAFILE_TABLE_NAME +
+                            " set filename=?,path=?,size=?,width=?,height=?,date=?,duration=?,thumb_path=?,latitude=?, " +
+                            "longitude=?,event_type=?,media_type=?,command_origin=? where id=?",
                     new Object[]{mediaFile.getFilename(), mediaFile.getPath(), mediaFile.getSize(), mediaFile.getWidth(),
                             mediaFile.getHeight(), mediaFile.getDate(), mediaFile.getDuration(), mediaFile.getThumbPath(),
                             mediaFile.getLatitude(), mediaFile.getLongitude(), mediaFile.getEventType(),
-                            mediaFile.getMediaType(), mediaFile.getCommandOrign()});
+                            mediaFile.getMediaType(), mediaFile.getCommandOrign(),mediaFile.getId()});
         }
         db.close();
+        MediaFile tmp = queryById(mediaFile.getId());
+        if(tmp != null){
+            Log.e("MediaFileDAOImpl","update "+ tmp.getFilename()+" "+tmp.getEventType());
+            tmp.print(TAG);
+        }
+
         return true;
     }
 
@@ -68,7 +77,7 @@ public class MediaFileDAOImpl {
         SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
         if(id > 0){
             // 用游标Cursor接收从数据库检索到的数据
-            cursor = db.rawQuery("select * from " + DefaultConfig.DB_MEDIAFILE_TABLE_NAME + " where id=?",
+            cursor = db.rawQuery("select * from " + Config.DB_MEDIAFILE_TABLE_NAME + " where id=?",
                     new String[]{String.valueOf(id)});
         }
         if(cursor!=null){
@@ -76,6 +85,8 @@ public class MediaFileDAOImpl {
                 String path = cursor.getString(cursor.getColumnIndex("path"));
                 try {
                     mediaFile = new MediaFile(path);
+                    mediaFile.setId(cursor.getInt(cursor.getColumnIndex("id")));
+                    mediaFile.setFilename(cursor.getString(cursor.getColumnIndex("filename")));
                     mediaFile.setPath(cursor.getString(cursor.getColumnIndex("path")));
                     mediaFile.setSize(cursor.getLong(cursor.getColumnIndex("size")));
                     mediaFile.setWidth(cursor.getInt(cursor.getColumnIndex("width")));
@@ -114,40 +125,40 @@ public class MediaFileDAOImpl {
         SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
         Cursor cursor = null;
         if(mediaType == null && eventType==null && commandOrigin==null){ //全为空,则查询全部 000
-            cursor = db.rawQuery("select * from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME, null);
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME, null);
         }
         if(mediaType == null && eventType==null && commandOrigin!=null){ //001
-            cursor = db.rawQuery("select * from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where command_origin=?",
                     new String[]{String.valueOf(commandOrigin.get())});
         }
         if(mediaType == null && eventType!=null && commandOrigin==null){ //010
-            cursor = db.rawQuery("select * from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where event_type=?",
                     new String[]{String.valueOf(eventType.get())});
         }
         if(mediaType == null && eventType!=null && commandOrigin!=null){ //011
-            cursor = db.rawQuery("select * from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where event_type=? and command_origin=?",
                     new String[]{String.valueOf(eventType.get()),String.valueOf(commandOrigin.get())});
         }
         if(mediaType != null && eventType==null && commandOrigin!=null){ //100
-            cursor = db.rawQuery("select * from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=?",
                     new String[]{String.valueOf(mediaType.get())});
         }
         if(mediaType != null && eventType==null && commandOrigin!=null){ //101
-            cursor = db.rawQuery("select * from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=? and command_origin=?",
                     new String[]{String.valueOf(mediaType.get()),String.valueOf(commandOrigin.get())});
         }
         if(mediaType != null && eventType!=null && commandOrigin==null){ //110
-            cursor = db.rawQuery("select * from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=? and event_type=?",
                     new String[]{String.valueOf(mediaType.get()),String.valueOf(eventType.get())});
         }
         if(mediaType != null && eventType!=null && commandOrigin!=null){ //111
-            cursor = db.rawQuery("select * from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=? and event_type=? and command_origin=?",
                     new String[]{String.valueOf(mediaType.get()),String.valueOf(eventType.get()),String.valueOf(commandOrigin.get())});
         }
@@ -155,7 +166,8 @@ public class MediaFileDAOImpl {
             while (cursor.moveToNext() && !cursor.isNull(0)) {
                 String path = cursor.getString(cursor.getColumnIndex("path"));
                 mediaFile = new MediaFile(path);
-                mediaFile.setPath(cursor.getString(cursor.getColumnIndex("filename")));
+                mediaFile.setId(cursor.getInt(cursor.getColumnIndex("id")));
+                mediaFile.setFilename(cursor.getString(cursor.getColumnIndex("filename")));
                 mediaFile.setPath(cursor.getString(cursor.getColumnIndex("path")));
                 mediaFile.setSize(cursor.getLong(cursor.getColumnIndex("size")));
                 mediaFile.setWidth(cursor.getInt(cursor.getColumnIndex("width")));
@@ -187,40 +199,40 @@ public class MediaFileDAOImpl {
         SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
         Cursor cursor = null;
         if(mediaType == null && eventType==null && commandOrigin==null){ //全为空,则查询全部 000
-            cursor = db.rawQuery("select sum(size) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME, null);
+            cursor = db.rawQuery("select sum(size) from "+ Config.DB_MEDIAFILE_TABLE_NAME, null);
         }
         if(mediaType == null && eventType==null && commandOrigin!=null){ //001
-            cursor = db.rawQuery("select sum(size) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(size) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where command_origin=?",
                     new String[]{String.valueOf(commandOrigin.get())});
         }
         if(mediaType == null && eventType!=null && commandOrigin==null){ //010
-            cursor = db.rawQuery("select sum(size) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(size) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where event_type=?",
                     new String[]{String.valueOf(eventType.get())});
         }
         if(mediaType == null && eventType!=null && commandOrigin!=null){ //011
-            cursor = db.rawQuery("select sum(size) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(size) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where event_type=? and command_origin=?",
                     new String[]{String.valueOf(eventType.get()),String.valueOf(commandOrigin.get())});
         }
         if(mediaType != null && eventType==null && commandOrigin!=null){ //100
-            cursor = db.rawQuery("select sum(size) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(size) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=?",
                     new String[]{String.valueOf(mediaType.get())});
         }
         if(mediaType != null && eventType==null && commandOrigin!=null){ //101
-            cursor = db.rawQuery("select sum(size) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(size) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=? and command_origin=?",
                     new String[]{String.valueOf(mediaType.get()),String.valueOf(commandOrigin.get())});
         }
         if(mediaType != null && eventType!=null && commandOrigin==null){ //110
-            cursor = db.rawQuery("select sum(size) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(size) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=? and event_type=?",
                     new String[]{String.valueOf(mediaType.get()),String.valueOf(eventType.get())});
         }
         if(mediaType != null && eventType!=null && commandOrigin!=null){ //111
-            cursor = db.rawQuery("select sum(size) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(size) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=? and event_type=? and command_origin=?",
                     new String[]{String.valueOf(mediaType.get()),String.valueOf(eventType.get()),String.valueOf(commandOrigin.get())});
         }
@@ -244,21 +256,21 @@ public class MediaFileDAOImpl {
         SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
         Cursor cursor = null;
         if(eventType == null && commandOrigin == null){  //00
-            cursor = db.rawQuery("select sum(duration) from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(duration) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                     "where media_type=?",new String[]{String.valueOf(MediaFile.MediaType.VIDEO.get())});
         }
         if(eventType == null && commandOrigin != null){  //01
-            cursor = db.rawQuery("select sum(duration) from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(duration) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             "where media_type=? and command_origin=?",
                     new String[]{String.valueOf(MediaFile.MediaType.VIDEO.get()), String.valueOf(commandOrigin.get())});
         }
         if(eventType != null && commandOrigin == null){  //10
-            cursor = db.rawQuery("select sum(duration) from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(duration) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             "where media_type=? and event_type=?",
                     new String[]{String.valueOf(MediaFile.MediaType.VIDEO.get()), String.valueOf(eventType.get())});
         }
         if(eventType != null && commandOrigin != null){   //11
-            cursor = db.rawQuery("select sum(duration) from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(duration) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             "where media_type=? and event_type=? and command_origin=?",
                     new String[]{String.valueOf(MediaFile.MediaType.VIDEO.get()), String.valueOf(eventType.get()),String.valueOf(commandOrigin.get())});
         }
@@ -283,40 +295,40 @@ public class MediaFileDAOImpl {
         SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
         Cursor cursor = null;
         if(mediaType == null && eventType==null && commandOrigin==null){ //全为空,则查询全部 000
-            cursor = db.rawQuery("select count(*) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME, null);
+            cursor = db.rawQuery("select count(*) from "+ Config.DB_MEDIAFILE_TABLE_NAME, null);
         }
         if(mediaType == null && eventType==null && commandOrigin!=null){ //001
-            cursor = db.rawQuery("select count(*) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select count(*) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where command_origin=?",
                     new String[]{String.valueOf(commandOrigin.get())});
         }
         if(mediaType == null && eventType!=null && commandOrigin==null){ //010
-            cursor = db.rawQuery("select count(*) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select count(*) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where event_type=?",
                     new String[]{String.valueOf(eventType.get())});
         }
         if(mediaType == null && eventType!=null && commandOrigin!=null){ //011
-            cursor = db.rawQuery("select count(*) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select count(*) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where event_type=? and command_origin=?",
                     new String[]{String.valueOf(eventType.get()),String.valueOf(commandOrigin.get())});
         }
         if(mediaType != null && eventType==null && commandOrigin!=null){ //100
-            cursor = db.rawQuery("select count(*) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select count(*) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=?",
                     new String[]{String.valueOf(mediaType.get())});
         }
         if(mediaType != null && eventType==null && commandOrigin!=null){ //101
-            cursor = db.rawQuery("select count(*) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select count(*) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=? and command_origin=?",
                     new String[]{String.valueOf(mediaType.get()),String.valueOf(commandOrigin.get())});
         }
         if(mediaType != null && eventType!=null && commandOrigin==null){ //110
-            cursor = db.rawQuery("select sum(size) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select sum(size) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=? and event_type=?",
                     new String[]{String.valueOf(mediaType.get()),String.valueOf(eventType.get())});
         }
         if(mediaType != null && eventType!=null && commandOrigin!=null){ //111
-            cursor = db.rawQuery("select count(*) from "+ DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select count(*) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=? and event_type=? and command_origin=?",
                     new String[]{String.valueOf(mediaType.get()),String.valueOf(eventType.get()),String.valueOf(commandOrigin.get())});
         }
@@ -339,25 +351,25 @@ public class MediaFileDAOImpl {
         SQLiteDatabase db = dbOpenHelper.getReadableDatabase();
         Cursor cursor = null;
         if(eventType == null && mediaType == null){  //00
-            cursor = db.rawQuery("select * from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
-                    " where (date in (select min(date) from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME+
+                    " where (date in (select min(date) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                     " ))",null);
         }
         if(eventType == null && mediaType != null){  //01
-            cursor = db.rawQuery("select * from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
-                            " where (date in (select min(date) from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME+
+                            " where (date in (select min(date) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=? ))",
                     new String[]{ String.valueOf(mediaType.get())});
         }
         if(eventType != null && mediaType == null){  //10
-            cursor = db.rawQuery("select * from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
-                            " where (date in (select min(date) from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME+
+                            " where (date in (select min(date) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where event_type=?))",
                     new String[]{ String.valueOf(eventType.get())});
         }
         if(eventType != null && mediaType != null){   //11
-            cursor = db.rawQuery("select * from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
-                            " where (date in (select min(date) from "+DefaultConfig.DB_MEDIAFILE_TABLE_NAME+
+            cursor = db.rawQuery("select * from "+ Config.DB_MEDIAFILE_TABLE_NAME+
+                            " where (date in (select min(date) from "+ Config.DB_MEDIAFILE_TABLE_NAME+
                             " where media_type=? and event_type=?))",
                     new String[]{ String.valueOf(mediaType.get()),String.valueOf(eventType.get())});
         }
@@ -379,11 +391,18 @@ public class MediaFileDAOImpl {
      */
     public boolean lockFileImpl(int id){
         MediaFile mediaFile = queryById(id);
+        Log.e(TAG,"lockFileImpl:"+id+"  "+mediaFile.getFilename());
         mediaFile.setEventType(MediaFile.EventType.LOCKED.get());
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        String dateDir = formatter.format(new Date(mediaFile.getDate()));
+        File datePath = new File(Config.LOCK_VIDEO_PATH+"/"+dateDir);  //按日期分文件夹
+        if(!datePath.exists()) datePath.mkdirs();
         File srcFile = new File(mediaFile.getPath());
-        File desFile = new File(DefaultConfig.LOCK_VIDEO_PATH);
+        File desFile = new File(datePath.getPath()+"/"+mediaFile.getFilename());
 
-        if(srcFile.renameTo(desFile)) {
+        if(srcFile.renameTo(desFile)) {    //移动文件
+            Log.e(TAG,"移动文件成功");
+            mediaFile.setPath(desFile.getPath());  //更新数据库路径
             return update(mediaFile);
         }else {
             return false;
@@ -395,12 +414,20 @@ public class MediaFileDAOImpl {
      * @return true or false
      */
     public boolean unlockFileImpl(int id){
+
         MediaFile mediaFile = queryById(id);
+        Log.e(TAG,"unlockFileImpl:"+id+"  "+mediaFile.getFilename());
         mediaFile.setEventType(MediaFile.EventType.NORMAL.get());
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        String dateDir = formatter.format(new Date(mediaFile.getDate()));
+        File datePath = new File(Config.NORMAL_VIDEO_PATH+"/"+dateDir);  //按日期分文件夹
+        if(!datePath.exists()) datePath.mkdirs();
         File srcFile = new File(mediaFile.getPath());
-        File desFile = new File(DefaultConfig.NORMAL_VIDEO_PATH);
+        File desFile = new File(datePath.getPath()+"/"+mediaFile.getFilename());
 
         if(srcFile.renameTo(desFile)) {
+            Log.e(TAG, "移动文件成功 " + mediaFile.getId());
+            mediaFile.setPath(desFile.getPath());  //更新数据库路径
             return update(mediaFile);
         }else {
             return false;
@@ -415,6 +442,7 @@ public class MediaFileDAOImpl {
         MediaFile mediaFile =  queryById(id);
         File file = new File(mediaFile.getPath());
         if(file.delete()){
+            Log.e(TAG,"delete file id "+ id);
             return delete(id);
         }else {
             return false;

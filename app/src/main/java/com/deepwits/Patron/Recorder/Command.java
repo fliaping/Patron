@@ -8,7 +8,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import com.deepwits.Patron.DefaultConfig;
+import com.deepwits.Patron.Config;
 
 /**
  * Created by Payne on 1/21/16.
@@ -28,7 +28,7 @@ public class Command {
 
     private void registerActionBroadcast(){
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(DefaultConfig.ACTION_BROADCAST);
+        intentFilter.addAction(Config.ACTION_BROADCAST);
         mActionBroadcastReceiver = new ActionBroadcastReceiver();
         mRecordService.registerReceiver(mActionBroadcastReceiver,intentFilter);
         Log.v(TAG, "registerActionBroadcast");
@@ -36,7 +36,7 @@ public class Command {
 
     private void registerSettingBroadcast(){
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(DefaultConfig.SETTING_BROADCAST);
+        intentFilter.addAction(Config.SETTING_BROADCAST);
         mSettingBroadcastReceiver = new SettingBroadcastReceiver();
         mRecordService.registerReceiver(mSettingBroadcastReceiver,intentFilter);
         Log.v(TAG,"registerActionBroadcast");
@@ -55,18 +55,25 @@ public class Command {
             switch (action_name){
                 case "start_record" :
                     //mRecordService.startRecord();
+                    break;
                 case "stop_record" :
                     //mRecordService.stopRecord();
+                    break;
                 case "capture_picture" :
                     //mRecordService.capturePicture();
+                    break;
                 case "voice_on" :
                     //mRecordService.voiceOn();
+                    break;
                 case "voice_off" :
                     //mRecordService.voiceOff();
+                    break;
                 case "loop_record_on" :
                     //mRecordService.loopRecordOn();
+                    break;
                 case "loop_record_off" :
                     //mRecordService.loopRecordOff();
+                    break;
                 case "lock_file" :
                     String action = intent.getStringExtra("action");
                     int fileIds[] = intent.getIntArrayExtra("file_id");
@@ -77,10 +84,14 @@ public class Command {
                     }else {
                         Log.e(TAG,"未定义指令 lock_file - "+action);
                     }
+                    break;
                 case "delete_file" :
-                    Log.e("MediaFileDAOImpl","receive delete broadcast");
+                    Log.e("MediaFileDAOImpl", "receive delete broadcast");
                     int fileIds_1[] = intent.getIntArrayExtra("file_id");
                     mRecordService.deleteFiles(fileIds_1);
+                    break;
+                default:
+                    Log.e(TAG,"未定义广播参数:"+action_name);
 
             }
         }
@@ -92,43 +103,43 @@ public class Command {
     class SettingBroadcastReceiver extends BroadcastReceiver{
         @Override
         public void onReceive(Context context, Intent intent) {
-            String videoWidth = intent.getStringExtra(DefaultConfig.VIDEO_WIDTH);
-            String videoHeight = intent.getStringExtra(DefaultConfig.VIDEO_HEIGHT);
-            String videoFramerate = intent.getStringExtra(DefaultConfig.VIDEO_FRAMERATE);
-            String videoBitrate = intent.getStringExtra(DefaultConfig.VIDEO_BITRATE);
-            String videoQuality = intent.getStringExtra(DefaultConfig.VIDEO_QUALITY);
-            String pictureWidth = intent.getStringExtra(DefaultConfig.PICTURE_WIDTH);
-            String pictureHeight = intent.getStringExtra(DefaultConfig.PICTURE_HEIGHT);
-            String pictureQuality = intent.getStringExtra(DefaultConfig.PICTURE_QUALITY);
-            String rtspPort = intent.getStringExtra(DefaultConfig.RTSP_PORT);
+            String videoWidth = intent.getStringExtra(Config.VIDEO_WIDTH);
+            String videoHeight = intent.getStringExtra(Config.VIDEO_HEIGHT);
+            String videoFramerate = intent.getStringExtra(Config.VIDEO_FRAMERATE);
+            String videoBitrate = intent.getStringExtra(Config.VIDEO_BITRATE);
+            String videoQuality = intent.getStringExtra(Config.VIDEO_QUALITY);
+            String pictureWidth = intent.getStringExtra(Config.PICTURE_WIDTH);
+            String pictureHeight = intent.getStringExtra(Config.PICTURE_HEIGHT);
+            String pictureQuality = intent.getStringExtra(Config.PICTURE_QUALITY);
+            String rtspPort = intent.getStringExtra(Config.RTSP_PORT);
             SharedPreferences xSharedPreferences= mRecordService.getSharedPreferences("setting", Activity.MODE_PRIVATE);
             SharedPreferences.Editor editor = xSharedPreferences.edit();
             if(videoWidth != null){
-                editor.putInt(DefaultConfig.VIDEO_WIDTH, Integer.parseInt(videoWidth));
+                editor.putInt(Config.VIDEO_WIDTH, Integer.parseInt(videoWidth));
             }
             if(videoHeight != null){
-                editor.putInt(DefaultConfig.VIDEO_HEIGHT, Integer.parseInt(videoHeight));
+                editor.putInt(Config.VIDEO_HEIGHT, Integer.parseInt(videoHeight));
             }
             if(videoFramerate != null){
-                editor.putInt(DefaultConfig.VIDEO_FRAMERATE, Integer.parseInt(videoFramerate));
+                editor.putInt(Config.VIDEO_FRAMERATE, Integer.parseInt(videoFramerate));
             }
             if(videoBitrate != null){
-                editor.putInt(DefaultConfig.VIDEO_BITRATE, Integer.parseInt(videoBitrate));
+                editor.putInt(Config.VIDEO_BITRATE, Integer.parseInt(videoBitrate));
             }
             if(videoQuality != null){
-                editor.putString(DefaultConfig.VIDEO_QUALITY, videoQuality);
+                editor.putString(Config.VIDEO_QUALITY, videoQuality);
             }
             if(pictureWidth != null){
-                editor.putInt(DefaultConfig.PICTURE_WIDTH, Integer.parseInt(pictureWidth));
+                editor.putInt(Config.PICTURE_WIDTH, Integer.parseInt(pictureWidth));
             }
             if(pictureHeight != null){
-                editor.putInt(DefaultConfig.PICTURE_HEIGHT, Integer.parseInt(pictureHeight));
+                editor.putInt(Config.PICTURE_HEIGHT, Integer.parseInt(pictureHeight));
             }
             if(pictureQuality != null){
-                editor.putString(DefaultConfig.PICTURE_QUALITY, pictureQuality);
+                editor.putString(Config.PICTURE_QUALITY, pictureQuality);
             }
             if(rtspPort != null){
-                editor.putInt(DefaultConfig.RTSP_PORT, Integer.parseInt(rtspPort));
+                editor.putInt(Config.RTSP_PORT, Integer.parseInt(rtspPort));
             }
             editor.commit();
         }

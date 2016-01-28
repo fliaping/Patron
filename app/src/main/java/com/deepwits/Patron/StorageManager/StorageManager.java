@@ -6,7 +6,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.deepwits.Patron.DataBase.MediaFileDAOImpl;
-import com.deepwits.Patron.DefaultConfig;
+import com.deepwits.Patron.Config;
 import com.deepwits.Patron.Recorder.RecordService;
 
 import java.io.File;
@@ -45,8 +45,8 @@ public class StorageManager extends Thread {
     /**
      * 设置软硬限制的目的是存储管理线程的定时删除
      */
-    private final long softLimit = DefaultConfig.SOFT_LIMIT;  //默认存储软限制500M
-    private final long hardLimit = DefaultConfig.HARD_LIMIT;  //默认存储硬限制150M
+    private final long softLimit = Config.SOFT_LIMIT;  //默认存储软限制500M
+    private final long hardLimit = Config.HARD_LIMIT;  //默认存储硬限制150M
     private boolean isFirst = true;
     public boolean isScanned = false;
 
@@ -56,9 +56,10 @@ public class StorageManager extends Thread {
         super.run();
 
         try {
-            DefaultConfig.ok(); //check storage
+            Config.ok(mService); //check storage
+            Log.e(TAG,"Config.ok "  + Config.APP_PATH);
             makedirs();   //make all directory
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         mfImpl = new MediaFileDAOImpl(mService);
@@ -82,7 +83,7 @@ public class StorageManager extends Thread {
      * @param isRecord
      */
     public void checkStorageAndRecord(boolean isRecord) {
-        long avai = StorageUtil.getAvailableSize(DefaultConfig.ROOT);
+        long avai = StorageUtil.getAvailableSize(Config.ROOT);
         if (!isRecord) {            //大于硬限制可以在后台删除，不影响相机启动
             mHandler.post(new Runnable() {
                 @Override
@@ -166,7 +167,8 @@ public class StorageManager extends Thread {
         long pre = System.currentTimeMillis();
         List<MediaFile> storageList = new ArrayList<MediaFile>();
         long prescan = System.currentTimeMillis();
-        getFileList(DefaultConfig.APP_PATH, storageList); //存储中视频文件列表
+        Log.e(TAG,"APP_PATH"+Config.APP_PATH);
+        getFileList(Config.APP_PATH, storageList); //存储中视频文件列表
         long comparetime = System.currentTimeMillis();
         Log.v(TAG, "扫描文件用时为:" + (comparetime - prescan));
         List<MediaFile> dbList = mfImpl.query(null,null,null);
@@ -248,26 +250,26 @@ public class StorageManager extends Thread {
         boolean isok = false;
         int count = 0;
         delOldMediaFile();
-        long totalSize = StorageUtil.getTFTotalSize(DefaultConfig.ROOT);
-        long availableSize = StorageUtil.getAvailableSize(DefaultConfig.ROOT);
+        long totalSize = StorageUtil.getTFTotalSize(Config.ROOT);
+        long availableSize = StorageUtil.getAvailableSize(Config.ROOT);
         int videocount = mfImpl.getMeidaCount(MediaFile.MediaType.VIDEO, null, null);
         long myTotalUsedSize = mfImpl.getMeidaSize(null,null,null);
         if (availableSize < softLimit) {   //可用空间小于软限制且可用空间与本应用所用空间和大于软限制
             if ((availableSize + myTotalUsedSize) > softLimit) {
-                while (StorageUtil.getAvailableSize(DefaultConfig.ROOT) < softLimit && count < videocount) {           //循环删除，直到可用空间大于软限制
+                while (StorageUtil.getAvailableSize(Config.ROOT) < softLimit && count < videocount) {           //循环删除，直到可用空间大于软限制
                     delOldMediaFile();
                     count++;
                 }
-                if (StorageUtil.getAvailableSize(DefaultConfig.ROOT) > softLimit) {
+                if (StorageUtil.getAvailableSize(Config.ROOT) > softLimit) {
                     isok = true;
                 } else {        ///循环删除未能使剩余空间大于软限制
-                    Toast.makeText(mService, "录像空间不足(剩余：" + StorageUtil.getAvailableSize(DefaultConfig.ROOT) / 1024 / 1024 + "M)，请手动清理存储。", Toast.LENGTH_LONG).show();
+                    Toast.makeText(mService, "录像空间不足(剩余：" + StorageUtil.getAvailableSize(Config.ROOT) / 1024 / 1024 + "M)，请手动清理存储。", Toast.LENGTH_LONG).show();
                     isok = false;
                 }
             } else {// 可用空间小于软限制 且可用空间与本应用所用空间 和 小于软限制
                 syncMediaFile(); //有可能是数据库没同步，强制同步数据库
-                long myMediaAndAvailable = mfImpl.getMeidaSize(null,null,null) + StorageUtil.getAvailableSize(DefaultConfig.ROOT);
-                if (myMediaAndAvailable < DefaultConfig.SOFT_LIMIT) {
+                long myMediaAndAvailable = mfImpl.getMeidaSize(null,null,null) + StorageUtil.getAvailableSize(Config.ROOT);
+                if (myMediaAndAvailable < Config.SOFT_LIMIT) {
                     Toast.makeText(mService, "SD卡剩余空间低于" + hardLimit / 1024 / 1024 + "M,请手动清理存储", Toast.LENGTH_LONG).show();
                 }
                 isok = true;
@@ -290,20 +292,20 @@ public class StorageManager extends Thread {
     }
 
     private void makedirs(){
-        File file = new File(DefaultConfig.NORMAL_VIDEO_DIR);
+        File file = new File(Config.NORMAL_VIDEO_DIR);
         if(!file.exists()) file.mkdirs();
-        file = new File(DefaultConfig.LOCK_VIDEO_PATH);
+        file = new File(Config.LOCK_VIDEO_PATH);
         if(!file.exists()) file.mkdirs();
-        file = new File(DefaultConfig.UPLOAD_VIDEO_PATH);
+        file = new File(Config.UPLOAD_VIDEO_PATH);
         if(!file.exists()) file.mkdirs();
-        file = new File(DefaultConfig.TAKE_PICTURE_PATH);
+        file = new File(Config.TAKE_PICTURE_PATH);
         if(!file.exists()) file.mkdirs();
-        file = new File(DefaultConfig.UPLOAD_PICTURE_PATH);
+        file = new File(Config.UPLOAD_PICTURE_PATH);
         if(!file.exists()) file.mkdirs();
-        file = new File(DefaultConfig.THUMBNAIL_PATH);
+        file = new File(Config.THUMBNAIL_PATH);
         if(!file.exists()) {
             file.mkdirs();
-            Log.e(TAG,"dir create "+DefaultConfig.THUMBNAIL_PATH);
+            Log.e(TAG,"dir create "+ Config.THUMBNAIL_PATH);
         }
     }
     public MediaFileDAOImpl getMfImpl(){

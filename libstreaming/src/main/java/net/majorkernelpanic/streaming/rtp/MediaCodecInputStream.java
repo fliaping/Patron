@@ -23,6 +23,7 @@ package net.majorkernelpanic.streaming.rtp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.security.acl.LastOwnerException;
 
 import android.annotation.SuppressLint;
 import android.media.MediaCodec;
@@ -105,6 +106,7 @@ public class MediaCodecInputStream extends InputStream {
 			e.printStackTrace();
 		}
 
+		Log.e(TAG,"MediaCodecInputStream return "+min);
 		return min;
 	}
 	

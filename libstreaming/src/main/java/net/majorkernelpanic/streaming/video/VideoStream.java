@@ -37,6 +37,7 @@ import net.majorkernelpanic.streaming.hw.EncoderDebugger;
 import net.majorkernelpanic.streaming.hw.NV21Convertor;
 import net.majorkernelpanic.streaming.rtp.MediaCodecInputStream;
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.hardware.Camera;
@@ -46,6 +47,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
@@ -82,7 +84,8 @@ public abstract class VideoStream extends MediaStream {
 	protected String mEncoderName;
 	protected int mEncoderColorFormat;
 	protected int mCameraImageFormat;
-	protected int mMaxFps = 0;	
+	protected int mMaxFps = 0;
+	protected ByteBuffer[] patronInputBuffers;
 
 	/** 
 	 * Don't use this class directly.
@@ -278,7 +281,7 @@ public abstract class VideoStream extends MediaStream {
 	public synchronized void start() throws IllegalStateException, IOException {
 		if (!mPreviewStarted) mCameraOpenedManually = false;
 		super.start();
-		Log.e("rtsp","videostream is start");
+		Log.e("rtsp", "videostream is start");
 		Log.d(TAG,"Stream configuration: FPS: "+mQuality.framerate+" Width: "+mQuality.resX+" Height: "+mQuality.resY);
 	}
 
@@ -537,6 +540,38 @@ public abstract class VideoStream extends MediaStream {
 		mStreaming = true;
 
 	}
+
+
+	//add
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+	protected void encodeWithPatron() throws RuntimeException, IOException {
+		Log.e(TAG,"Video encoded using the Patron API");
+
+		int colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_Format24bitRGB888;
+		int width = 1280,height = 720;
+		MediaFormat mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height);
+		mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat/*MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar*/);
+		mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, (width * height) << 3);
+		mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
+		mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
+
+		try {
+			mMediaCodec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		mMediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+		mMediaCodec.start();
+		patronInputBuffers = mMediaCodec.getInputBuffers();
+
+		// The packetizer encapsulates the bit stream in an RTP stream and send it over the network
+		mPacketizer.setInputStream(new MediaCodecInputStream(mMediaCodec));
+		mPacketizer.start();
+
+	}
+
+
+
 
 	/**
 	 * Returns a description of the stream using SDP. 

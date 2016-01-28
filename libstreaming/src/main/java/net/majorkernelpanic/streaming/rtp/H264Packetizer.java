@@ -55,6 +55,7 @@ public class H264Packetizer extends AbstractPacketizer implements Runnable {
 	}
 
 	public void start() {
+		Log.e("RTSP","H264Packetizer started");
 		if (t == null) {
 			t = new Thread(this);
 			t.start();
@@ -142,6 +143,7 @@ public class H264Packetizer extends AbstractPacketizer implements Runnable {
 	 */
 	@SuppressLint("NewApi")
 	private void send() throws IOException, InterruptedException {
+		Log.e("RTSP","H264Packetizer send");
 		int sum = 1, len = 0, type;
 
 		if (streamType == 0) {

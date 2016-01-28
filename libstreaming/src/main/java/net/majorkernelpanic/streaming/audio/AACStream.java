@@ -248,6 +248,11 @@ public class AACStream extends AudioStream {
 
 	}
 
+	@Override
+	protected void encodeWithPatron() throws IOException {
+
+	}
+
 	/** Stops the stream. */
 	public synchronized void stop() {
 		if (mStreaming) {
