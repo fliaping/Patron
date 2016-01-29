@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <boolean name="libstreaming-1280x720-success" value="false" />
+    <int name="libstreaming-320x240-sliceHeight" value="240" />
+    <int name="libstreaming-640x480-colorFormat" value="21" />
+    <int name="libstreaming-fps30,17,320240" value="30" />
+    <int name="libstreaming-320x240-padding" value="0" />
+    <int name="libstreaming-320x240-lastSdk" value="19" />
+    <int name="libstreaming-320x240-lastVersion" value="3" />
+    <boolean name="libstreaming-320x240-success" value="true" />
+    <string name="libstreaming-320x240-encoderName">OMX.k3.video.encoder.avc</string>
+    <int name="libstreaming-640x480-padding" value="0" />
+    <string name="rtsp_port">9408</string>
+    <int name="libstreaming-640x480-lastSdk" value="19" />
+    <string name="libstreaming-640x480-encoderName">OMX.k3.video.encoder.avc</string>
+    <string name="libstreaming-320x240-pps">KM4C8kg=</string>
+    <int name="libstreaming-fps30,17,640480" value="30" />
+    <int name="libstreaming-640x480-sliceHeight" value="480" />
+    <boolean name="libstreaming-640x480-reversed" value="false" />
+    <int name="libstreaming-640x480-lastVersion" value="3" />
+    <boolean name="libstreaming-320x240-planar" value="false" />
+    <boolean name="libstreaming-320x240-reversed" value="false" />
+    <boolean name="libstreaming-1920x1080-success" value="false" />
+    <string name="libstreaming-h264-mr-30,1920,1080">42e02a,J0LgKo1oB4AiflmyAAADAAIAAAMAPB4oRUA=,KM4NJIA=</string>
+    <string name="libstreaming-h264-mr-30,1280,720">42e01f,J0LgH41oBQBbpsgAAAMACAAAAwDweKEV,KM4NJIA=</string>
+    <string name="libstreaming-320x240-sps">J0LgDY1oFB+myAAAAwAIAAADAKB4oRU=</string>
+    <int name="libstreaming-320x240-stride" value="320" />
+    <int name="libstreaming-640x480-stride" value="640" />
+    <int name="libstreaming-320x240-colorFormat" value="21" />
+    <string name="libstreaming-640x480-pps">KM4ESSA=</string>
+    <boolean name="libstreaming-640x480-planar" value="false" />
+    <boolean name="libstreaming-640x480-success" value="true" />
+    <string name="libstreaming-640x480-sps">J0LgHo1oCgPabIAAAAMAgAAACgeKEVA=</string>
+</map>
